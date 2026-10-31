@@ -172,3 +172,30 @@ func TestRejectedEnvKeyPointsAtClientConfiguration(t *testing.T) {
 		t.Errorf("err = %v, want a hint to fix %s in the client configuration", err, KeyEnvVar)
 	}
 }
+
+func TestSavingThroughASymlinkUpdatesItsTarget(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks needs extra privileges on Windows")
+	}
+	home := setHome(t)
+	target := filepath.Join(t.TempDir(), "dotfiles-key")
+	if err := os.WriteFile(target, []byte("old\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(home, ".config", "garmin", "connect-personal-api-key")
+	if err := os.MkdirAll(filepath.Dir(link), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := SaveAPIKey("new"); err != nil {
+		t.Fatal(err)
+	}
+	if info, err := os.Lstat(link); err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("the key path is no longer a symlink: %v, %v", info, err)
+	}
+	if data, err := os.ReadFile(target); err != nil || string(data) != "new\n" {
+		t.Errorf("target = %q, %v; want the new key", data, err)
+	}
+}

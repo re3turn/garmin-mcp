@@ -135,10 +135,12 @@ func SaveAPIKey(key string) (string, error) {
 	return path, nil
 }
 
-// writePrivateFile goes through a temp file, which os.CreateTemp creates with
-// mode 0600, so the secret is never readable by others and a failed write
-// never truncates a working key.
+// writePrivateFile follows a symlink, so a key file kept elsewhere (a dotfiles
+// repository, say) is updated in place rather than replaced by a regular file.
 func writePrivateFile(path string, data []byte) error {
+	if target, err := filepath.EvalSymlinks(path); err == nil {
+		path = target
+	}
 	return replaceFile(path, data, 0o700)
 }
 

@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 )
 
-// replaceFile writes through a temp file so a failed write never leaves a
-// truncated file behind. os.CreateTemp creates the file with mode 0600, and
-// os.Rename replaces an existing file on every OS Go supports, including
-// Windows.
+// replaceFile writes through a temp file (mode 0600) and a rename, so a failed
+// write never leaves a truncated file. On Windows the rename fails while
+// another process has the file open; retrying works. A symlink at path is
+// replaced, not followed, so a download can't escape its folder through one.
 func replaceFile(path string, content []byte, dirPerm os.FileMode) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, dirPerm); err != nil {

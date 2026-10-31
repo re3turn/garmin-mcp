@@ -121,7 +121,7 @@ func saveKey(ctx context.Context) int {
 		return 1
 	}
 	if key == "" {
-		fmt.Println("No key entered; nothing saved. Run `garmin-personal-mcp auth` in a terminal, or pipe the key in on stdin.")
+		fmt.Fprintln(os.Stderr, "No key entered; nothing saved. Run `garmin-personal-mcp auth` in a terminal, or pipe the key in on stdin.")
 		return 1
 	}
 	if _, err := garmin.NewClient(garmin.WithAPIKey(key)).ProfileSettings(ctx); err != nil {
@@ -140,7 +140,7 @@ func saveKey(ctx context.Context) int {
 	}
 	fmt.Printf("Connected to Garmin Connect. Key saved to %s (owner-only permissions).\n", path)
 	if _, ok := os.LookupEnv(garmin.KeyEnvVar); ok {
-		fmt.Printf("Note: %s is set and takes precedence over the saved key; unset it to use the new one.\n", garmin.KeyEnvVar)
+		fmt.Fprintf(os.Stderr, "Note: %s is set and takes precedence over the saved key; unset it to use the new one.\n", garmin.KeyEnvVar)
 	}
 	return 0
 }
@@ -156,10 +156,10 @@ func readKey() (string, error) {
 		}
 		return strings.TrimSpace(line), nil
 	}
-	fmt.Printf("Create a Garmin Connect Personal API key (it is shown only once):\n  %s\n\n", garmin.KeyPage)
-	fmt.Print("Paste the key (input is hidden): ")
+	fmt.Fprintf(os.Stderr, "Create a Garmin Connect Personal API key (it is shown only once):\n  %s\n\n", garmin.KeyPage)
+	fmt.Fprint(os.Stderr, "Paste the key (input is hidden): ")
 	key, err := term.ReadPassword(fd)
-	fmt.Println()
+	fmt.Fprintln(os.Stderr)
 	if err != nil {
 		return "", err
 	}
@@ -168,7 +168,7 @@ func readKey() (string, error) {
 
 func checkKey(ctx context.Context) int {
 	if _, err := garmin.NewClient().ProfileSettings(ctx); err != nil {
-		fmt.Printf("Not connected: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Not connected: %v\n", err)
 		return 1
 	}
 	fmt.Println("Connected to Garmin Connect.")

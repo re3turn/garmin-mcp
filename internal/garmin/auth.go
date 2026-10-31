@@ -176,7 +176,11 @@ func (a *Authenticator) key() (key string, fromEnv bool, err error) {
 func (a *Authenticator) Token(ctx context.Context, stale string) (string, error) {
 	key, fromEnv, err := a.key()
 	if err != nil {
-		return "", err
+		if errors.Is(err, ErrAPIKey) {
+			return "", err
+		}
+		// Such as a key file that can't be read: no request can be made.
+		return "", &tokenError{err}
 	}
 	sum := sha256.Sum256([]byte(a.baseURL + "\x00" + key))
 	fingerprint := hex.EncodeToString(sum[:])
@@ -272,7 +276,8 @@ func (a *Authenticator) exchange(ctx context.Context, key string, fromEnv bool) 
 	endpoint := a.baseURL + tokenPath
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, nil)
 	if err != nil {
-		return "", 0, err
+		// Such as an invalid GARMIN_PERSONAL_API_BASE_URL.
+		return "", 0, &tokenError{err}
 	}
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Authorization", "ApiKey "+key)

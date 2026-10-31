@@ -82,7 +82,9 @@ func inWindows(start, end time.Time, maxDays int, fetch func(first, last time.Ti
 		}
 		page, err := fetch(first, last)
 		if err != nil {
-			return nil, err
+			// Endpoints that take dates as query parameters don't show them in
+			// the error, so say which window of a long range failed.
+			return nil, fmt.Errorf("%s..%s: %w", isoDate(first), isoDate(last), err)
 		}
 		rows = append(rows, page...)
 		first = last.AddDate(0, 0, 1)

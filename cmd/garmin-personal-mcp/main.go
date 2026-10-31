@@ -45,6 +45,9 @@ func run(args []string) int {
 	showVersion := flags.Bool("version", false, "print the version")
 	check := flags.Bool("check", false, "with auth: report whether the saved key works, without prompting")
 	if err := flags.Parse(reorder(args)); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return 0
+		}
 		return 2
 	}
 	if *showVersion {
@@ -56,6 +59,11 @@ func run(args []string) int {
 	defer stop()
 
 	command := flags.Arg(0)
+	if flags.NArg() > 1 {
+		// `auth check` without the dashes would otherwise start the prompt.
+		fmt.Fprintf(os.Stderr, "unexpected arguments %q\n\n%s", flags.Args()[1:], usage)
+		return 2
+	}
 	if *check && command != "auth" {
 		fmt.Fprintln(os.Stderr, "--check only applies to the auth command")
 		return 2
@@ -114,7 +122,7 @@ func saveKey(ctx context.Context) int {
 	// terminal's echo intact; honor it once input returns.
 	if ctx.Err() != nil {
 		fmt.Fprintln(os.Stderr, "Cancelled; nothing saved.")
-		return 130
+		return cancelledExitCode(ctx)
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Couldn't read the key: %v\n", err)
@@ -143,6 +151,16 @@ func saveKey(ctx context.Context) int {
 		fmt.Fprintf(os.Stderr, "Note: %s is set and takes precedence over the saved key; unset it to use the new one.\n", garmin.KeyEnvVar)
 	}
 	return 0
+}
+
+// cancelledExitCode follows the shell convention of 128 + signal number.
+// signal.NotifyContext's cause type is unexported, so the signal is read from
+// its message, which os/signal formats as "<signal> signal received".
+func cancelledExitCode(ctx context.Context) int {
+	if strings.HasPrefix(context.Cause(ctx).Error(), syscall.SIGTERM.String()+" ") {
+		return 143
+	}
+	return 130
 }
 
 // readKey hides input at a terminal. Without one (a pipe, or a shell an agent

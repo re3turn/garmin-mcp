@@ -4,7 +4,10 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -205,6 +208,46 @@ func TestDayToleratesMissingSections(t *testing.T) {
 	if got["summary"].(map[string]any)["totalSteps"] == nil {
 		t.Errorf("summary = %v", got["summary"])
 	}
+	if _, ok := got["sleep"].(map[string]any)["no_data"]; !ok {
+		t.Errorf("sleep = %v, want no_data for Garmin's 204", got["sleep"])
+	}
+}
+
+// hangUp drops the connection without answering, as an unreachable or
+// failing network would.
+func hangUp(w http.ResponseWriter) {
+	conn, _, err := w.(http.Hijacker).Hijack()
+	if err == nil {
+		conn.Close()
+	}
+}
+
+func TestDayFailsWhenGarminDropsTheConnection(t *testing.T) {
+	_, c := newRecorder(t, map[string]func(http.ResponseWriter){"/": hangUp})
+	_, err := c.Day(context.Background(), day(t, "2026-10-31"))
+	var transportErr *url.Error
+	if !errors.As(err, &transportErr) {
+		t.Fatalf("err = %v, want a transport error", err)
+	}
+}
+
+func TestDayFailsWhenTheKeyIsRejected(t *testing.T) {
+	_, c := newRecorder(t, nil)
+	t.Setenv(KeyEnvVar, "rejected-key")
+	if _, err := c.Day(context.Background(), day(t, "2026-10-31")); !errors.Is(err, ErrAPIKey) {
+		t.Fatalf("err = %v, want a key error", err)
+	}
+}
+
+func TestDayFailsWhenNoTokenCanBeObtained(t *testing.T) {
+	isolate(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+	if _, err := NewClient(WithBaseURL(server.URL)).Day(context.Background(), day(t, "2026-10-31")); !isTokenError(err) {
+		t.Fatalf("err = %v, want the token error instead of six error sections", err)
+	}
 }
 
 func TestDayPropagatesUnauthorized(t *testing.T) {
@@ -214,7 +257,7 @@ func TestDayPropagatesUnauthorized(t *testing.T) {
 	}
 }
 
-func TestDayPropagatesUnreachableGarmin(t *testing.T) {
+func TestDayPropagatesCancellation(t *testing.T) {
 	_, c := newRecorder(t, nil)
 	cancelled, cancel := context.WithCancel(context.Background())
 	cancel()

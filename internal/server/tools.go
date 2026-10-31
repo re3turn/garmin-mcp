@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -127,8 +128,11 @@ func (s *Server) addSummaryTools(server *mcp.Server) {
 	addTool(server, &mcp.Tool{
 		Name: "garmin_get_day", Title: "Get day overview", Annotations: readsGarmin,
 		Description: "One day at a glance: daily summary (steps, calories, intensity minutes, resting HR, " +
-			"stress, body battery), last night's sleep, HRV, body battery, stress, and the day's activities. " +
-			`A section Garmin has no data for yet comes back as {"error": ...} while the rest still load.`,
+			"stress, body battery), last night's sleep, HRV, body battery, stress, and the day's activities " +
+			"(at most " + strconv.Itoa(garmin.DayActivityLimit) + "; use garmin_search_activities for the rest). " +
+			`A section Garmin has nothing for comes back as {"no_data": ...}, and one Garmin refused ` +
+			`(often data that doesn't exist yet, such as today's HRV before sleep) as {"error": ...}, ` +
+			`while the rest still load.`,
 	}, func(ctx context.Context, in dayInput) (any, error) {
 		day, err := s.parseDay(in.Date)
 		if err != nil {

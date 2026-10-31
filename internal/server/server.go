@@ -12,10 +12,7 @@ import (
 
 const defaultSpanDays = 7
 
-var noData = map[string]any{
-	"no_data": "Garmin returned nothing for this request: nothing was recorded " +
-		"for that date yet, or your device doesn't measure it.",
-}
+var noData = map[string]any{"no_data": garmin.NoDataMessage}
 
 var (
 	readsGarmin    = &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: new(true)}

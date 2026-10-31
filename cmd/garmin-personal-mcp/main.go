@@ -173,9 +173,10 @@ func serve(ctx context.Context) int {
 	return 0
 }
 
+// shutdownGrace is how long in-flight tool calls get after Ctrl-C or SIGTERM.
+const shutdownGrace = 5 * time.Second
+
 func serveHTTP(ctx context.Context, addr string, allowedHosts []string) int {
-	handler := server.HTTPHandler(server.NewRemote(garmin.NewClient(), buildVersion()), allowedHosts)
-	httpServer := &http.Server{Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Couldn't listen on %s: %v\n", addr, err)
@@ -183,30 +184,44 @@ func serveHTTP(ctx context.Context, addr string, allowedHosts []string) int {
 	}
 	fmt.Fprintf(os.Stderr, "Serving MCP over streamable HTTP at http://%s%s (no authentication; keep it off the public internet)\n",
 		listener.Addr(), server.MCPPath)
+	if err := runHTTP(ctx, listener, server.NewRemote(garmin.NewClient(), buildVersion()), allowedHosts, shutdownGrace); err != nil {
+		slog.Error("server stopped", "error", err)
+		return 1
+	}
+	return 0
+}
+
+// runHTTP serves until ctx is done. Closing the MCP sessions ends the event
+// streams clients hold open, which Shutdown would otherwise wait on; grace
+// bounds a tool call that never returns, and running it out is a normal stop.
+func runHTTP(ctx context.Context, listener net.Listener, mcpServer *mcp.Server, allowedHosts []string, grace time.Duration) error {
+	httpServer := &http.Server{Handler: server.HTTPHandler(mcpServer, allowedHosts), ReadHeaderTimeout: 10 * time.Second}
 	served := make(chan error, 1)
 	go func() { served <- httpServer.Serve(listener) }()
 	select {
 	case err := <-served:
-		slog.Error("server stopped", "error", err)
-		return 1
+		return err
 	case <-ctx.Done():
 	}
-	// Restore the default signal behavior so a second Ctrl-C exits at once
-	// instead of waiting out the shutdown below.
+	// A second Ctrl-C exits at once.
 	signal.Reset(os.Interrupt, syscall.SIGTERM)
-	// Let in-flight tool calls finish, but not forever: a connected client keeps
-	// an event stream open that Shutdown would otherwise wait on until the
-	// deadline, so close what's left once it passes. That is still a normal stop.
-	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), grace)
 	defer cancel()
-	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+	shutdown := make(chan error, 1)
+	go func() { shutdown <- httpServer.Shutdown(shutdownCtx) }()
+	// Close waits for in-flight requests, so it mustn't hold up the return.
+	go func() {
+		for session := range mcpServer.Sessions() {
+			session.Close()
+		}
+	}()
+	if err := <-shutdown; err != nil {
 		httpServer.Close()
 		if !errors.Is(err, context.DeadlineExceeded) {
-			slog.Error("shutdown", "error", err)
-			return 1
+			return err
 		}
 	}
-	return 0
+	return nil
 }
 
 func saveKey(ctx context.Context) int {

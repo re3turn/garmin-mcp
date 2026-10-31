@@ -187,10 +187,10 @@ func (a *Authenticator) Token(ctx context.Context, stale string) (string, error)
 	if token, ok := a.cached(fingerprint, stale); ok {
 		return token, nil
 	}
-	// Concurrent callers (garmin_get_day's sections) share one exchange, so a
-	// failing exchange fails them all at once instead of each retrying it in
-	// turn, and a 401 on every section still costs one exchange.
-	result := a.exchanges.DoChan(fingerprint, func() (any, error) {
+	// Concurrent callers (garmin_get_day's sections) share one exchange, and a
+	// failure fails them all at once instead of each retrying in turn. The key
+	// includes stale so no caller gets back the token it reported rejected.
+	result := a.exchanges.DoChan(fingerprint+"\x00"+stale, func() (any, error) {
 		if token, ok := a.cached(fingerprint, stale); ok {
 			return token, nil
 		}

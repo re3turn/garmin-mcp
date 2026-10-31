@@ -317,8 +317,40 @@ func TestDayToleratesMissingSections(t *testing.T) {
 	if got["summary"].(map[string]any)["totalSteps"] == nil {
 		t.Errorf("summary = %v", got["summary"])
 	}
-	if _, ok := got["sleep"].(map[string]any)["no_data"]; !ok {
-		t.Errorf("sleep = %v, want no_data for Garmin's 204", got["sleep"])
+	// Every unrouted path answers 204. stress and body_battery come back as
+	// empty lists from their range endpoints, and must read the same as sleep.
+	for _, name := range []string{"sleep", "stress", "body_battery"} {
+		if _, ok := got[name].(map[string]any)["no_data"]; !ok {
+			t.Errorf("%s = %#v, want no_data for Garmin's 204", name, got[name])
+		}
+	}
+	// An empty activity list is an answer, not missing data.
+	if activities, ok := got["activities"].([]any); !ok || len(activities) != 0 {
+		t.Errorf("activities = %#v, want an empty list", got["activities"])
+	}
+}
+
+// The last section fails with 401 while the others hang until cancelled. Day
+// must return that 401 itself: a cancelled sibling's error wraps it too, but
+// as "couldn't reach Garmin", which would misreport a bad key as an outage.
+func TestDayReturnsTheFirstFatalErrorAndCancelsTheRest(t *testing.T) {
+	isolate(t)
+	f := newFakeGarmin(t, func(w http.ResponseWriter, r *http.Request, _ string) {
+		if strings.HasPrefix(r.URL.Path, "/activitylist-service/") {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		<-r.Context().Done()
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	started := time.Now()
+	_, err := f.client().Day(ctx, day(t, "2026-10-31"))
+	if httpErr, ok := err.(*HTTPError); !ok || httpErr.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("err = %v, want the failing section's own 401", err)
+	}
+	if elapsed := time.Since(started); elapsed > 2*time.Second {
+		t.Errorf("Day took %v; the hanging sections weren't cancelled", elapsed)
 	}
 }
 
@@ -370,8 +402,28 @@ func TestDayPropagatesCancellation(t *testing.T) {
 	_, c := newRecorder(t, nil)
 	cancelled, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := c.Day(cancelled, day(t, "2026-10-31")); err == nil {
-		t.Fatal("Day with a cancelled context returned no error")
+	if _, err := c.Day(cancelled, day(t, "2026-10-31")); !errors.Is(err, context.Canceled) {
+		t.Fatalf("err = %v, want context.Canceled", err)
+	}
+}
+
+func TestDayFailsWhenTheBaseURLIsInvalid(t *testing.T) {
+	isolate(t)
+	_, err := NewClient(WithBaseURL("http://bad host")).Day(context.Background(), day(t, "2026-10-31"))
+	if !isTokenError(err) {
+		t.Fatalf("err = %v, want a token error instead of six error sections", err)
+	}
+}
+
+func TestWindowErrorsNameTheWindowOnlyForSplitRanges(t *testing.T) {
+	_, c := newRecorder(t, map[string]func(http.ResponseWriter){"/usersummary-service/stats/steps/": status(http.StatusInternalServerError)})
+	_, err := c.Stats(context.Background(), StatSteps, day(t, "2026-10-01"), day(t, "2026-10-07"))
+	if err == nil || strings.Contains(err.Error(), "2026-10-01..") {
+		t.Errorf("single window: err = %v, want no window prefix", err)
+	}
+	_, err = c.Stats(context.Background(), StatSteps, day(t, "2026-01-01"), day(t, "2026-03-01"))
+	if err == nil || !strings.HasPrefix(err.Error(), "2026-01-01..2026-01-28: ") {
+		t.Errorf("split range: err = %v, want the failing window as a prefix", err)
 	}
 }
 

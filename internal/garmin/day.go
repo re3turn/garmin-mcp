@@ -15,29 +15,29 @@ const (
 		"for it yet, or your device doesn't measure it."
 )
 
-// Day combines the sections that answer "how was my day". Garmin answers 4xx
-// for data that doesn't exist yet (today's HRV before you've slept), so a
-// failed section becomes {"error": ...} instead of sinking the rest. Some
-// failures mean no section can be trusted, and Day returns them as its error:
-// a 401 that Get already retried (the key is bad), a key problem, a failure to
-// get a token, or a request that never got an answer (Garmin unreachable, or
-// ctx done). The sections are independent, so they are fetched concurrently,
-// and the first such failure cancels the rest.
+// Day fetches the sections concurrently. Garmin answers 4xx for data that
+// doesn't exist yet (today's HRV before sleep), so a failed section becomes
+// {"error": ...}. Failures that make every section untrustworthy (see
+// isFatalForDay) cancel the rest and are returned instead.
 func (c *Client) Day(parent context.Context, day time.Time) (map[string]any, error) {
 	ctx, cancel := context.WithCancelCause(parent)
 	defer cancel(nil)
 	sections := []struct {
 		name string
 		read func() (any, error)
+		// emptyIsNoData marks sections that return one row per day, so an empty
+		// list means Garmin had nothing for the day (its 204), the same as a nil
+		// value. An empty activity list is a real answer: no activities.
+		emptyIsNoData bool
 	}{
-		{"summary", func() (any, error) { return c.DailySummary(ctx, day) }},
-		{"sleep", func() (any, error) { return c.Sleep(ctx, day) }},
-		{"hrv", func() (any, error) { return c.HRVSummaries(ctx, day, day) }},
-		{"body_battery", func() (any, error) { return c.BodyBattery(ctx, day, day, nil) }},
-		{"stress", func() (any, error) { return c.Stats(ctx, StatStress, day, day) }},
+		{"summary", func() (any, error) { return c.DailySummary(ctx, day) }, false},
+		{"sleep", func() (any, error) { return c.Sleep(ctx, day) }, false},
+		{"hrv", func() (any, error) { return c.HRVSummaries(ctx, day, day) }, false},
+		{"body_battery", func() (any, error) { return c.BodyBattery(ctx, day, day, nil) }, true},
+		{"stress", func() (any, error) { return c.Stats(ctx, StatStress, day, day) }, true},
 		{"activities", func() (any, error) {
 			return c.SearchActivities(ctx, ActivitySearch{Start: &day, End: &day, ExcludeChildren: true, Limit: DayActivityLimit})
-		}},
+		}, false},
 	}
 	type result struct {
 		value any
@@ -55,11 +55,8 @@ func (c *Client) Day(parent context.Context, day time.Time) (map[string]any, err
 		})
 	}
 	wg.Wait()
-	if err := parent.Err(); err != nil {
-		return nil, err
-	}
 	// The first fatal error is the cause; sections it cancelled only report
-	// that they were cancelled.
+	// that they were cancelled. A cancelled parent is the cause too.
 	if err := context.Cause(ctx); err != nil {
 		return nil, err
 	}
@@ -70,13 +67,18 @@ func (c *Client) Day(parent context.Context, day time.Time) (map[string]any, err
 		switch {
 		case err != nil:
 			record[section.name] = map[string]any{"error": err.Error()}
-		case value == nil:
+		case value == nil, section.emptyIsNoData && isEmptyList(value):
 			record[section.name] = map[string]any{"no_data": NoDataMessage}
 		default:
 			record[section.name] = value
 		}
 	}
 	return record, nil
+}
+
+func isEmptyList(value any) bool {
+	list, ok := value.([]any)
+	return ok && len(list) == 0
 }
 
 func isFatalForDay(err error) bool {

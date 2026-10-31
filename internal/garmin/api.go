@@ -33,7 +33,6 @@ func (q query) strs(name string, values []string) query {
 	return q
 }
 
-// Garmin expects lowercase true/false.
 func (q query) boolean(name string, value *bool) query {
 	if value != nil {
 		q[name] = []string{strconv.FormatBool(*value)}
@@ -56,6 +55,17 @@ func (q query) number(name string, value *float64) query {
 }
 
 func (q query) values() url.Values { return url.Values(q) }
+
+// Per-request range limits from Garmin's Personal API reference
+// (https://developer.garmin.com/gc-developer-program/personal/swagger-docs/).
+const (
+	stepsMaxDays          = 28
+	stressMaxDays         = 28
+	hydrationMaxDays      = 31
+	sleepSummariesMaxDays = 31
+	bodyBatteryMaxDays    = 31
+	dailySummariesMaxDays = 365
+)
 
 // inWindows splits a range that exceeds an endpoint's documented maximum into
 // consecutive requests and concatenates the rows each returns.

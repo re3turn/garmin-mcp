@@ -38,9 +38,9 @@ func (s *Server) mcpServer(version string) *mcp.Server {
 	return server
 }
 
-// addTool wraps every result the same way: MCP clients render a bare list as
-// one content block per item, so an empty list would reach the model as
-// nothing at all, and Garmin's empty 204 needs an explanation.
+// addTool wraps every result the same way: structuredContent should be a JSON
+// object rather than an array, an empty list should read as "no results"
+// rather than as nothing, and Garmin's empty 204 needs an explanation.
 func addTool[In any](server *mcp.Server, tool *mcp.Tool, run func(context.Context, In) (any, error)) {
 	mcp.AddTool(server, tool, func(ctx context.Context, _ *mcp.CallToolRequest, in In) (*mcp.CallToolResult, any, error) {
 		result, err := run(ctx, in)

@@ -6,11 +6,6 @@ import (
 	"time"
 )
 
-const (
-	bodyBatteryMaxDays    = 31
-	sleepSummariesMaxDays = 31
-)
-
 // All-day sample arrays are large and rarely what a model needs, so they are
 // dropped unless the caller asks for them.
 var (

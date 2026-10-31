@@ -66,7 +66,7 @@ type ActivitySearch struct {
 	Limit, Offset            int
 }
 
-func (s ActivitySearch) values() query {
+func (s ActivitySearch) query() query {
 	q := query{}.
 		integer("start", &s.Offset).
 		integer("limit", &s.Limit).
@@ -117,7 +117,7 @@ func (s ActivitySearch) values() query {
 }
 
 func (c *Client) SearchActivities(ctx context.Context, search ActivitySearch) (any, error) {
-	return c.Get(ctx, "/activitylist-service/activities/search/activities", search.values().values())
+	return c.Get(ctx, "/activitylist-service/activities/search/activities", search.query().values())
 }
 
 var errActivityID = errors.New("activity_id must be a positive integer")

@@ -6,10 +6,6 @@ import (
 	"time"
 )
 
-// Per-request range limits from Garmin's Personal API reference
-// (https://developer.garmin.com/gc-developer-program/personal/swagger-docs/).
-const dailySummariesMaxDays = 365
-
 type Stat string
 
 const (
@@ -18,7 +14,7 @@ const (
 	StatHydration Stat = "hydration"
 )
 
-var statMaxDays = map[Stat]int{StatSteps: 28, StatStress: 28, StatHydration: 31}
+var statMaxDays = map[Stat]int{StatSteps: stepsMaxDays, StatStress: stressMaxDays, StatHydration: hydrationMaxDays}
 
 func (c *Client) DailySummary(ctx context.Context, day time.Time) (any, error) {
 	return c.Get(ctx, "/usersummary-service/usersummary/daily", query{}.date("calendarDate", day).values())

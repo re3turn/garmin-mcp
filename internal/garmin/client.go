@@ -150,7 +150,9 @@ func (c *Client) get(ctx context.Context, path string, query url.Values, accept,
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		// A connection that drops mid-body is as unreachable as one that never
+		// connected, so it gets the same *url.Error type callers check for.
+		return nil, fmt.Errorf("couldn't reach Garmin: %w", &url.Error{Op: http.MethodGet, URL: path, Err: err})
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, &HTTPError{StatusCode: resp.StatusCode, Method: http.MethodGet, Path: path, Body: redact(body, token)}

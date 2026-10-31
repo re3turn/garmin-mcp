@@ -48,6 +48,15 @@ Claude Code:
 claude mcp add garmin -- garmin-personal-mcp
 ```
 
+Codex CLI:
+
+```sh
+codex mcp add garmin -- garmin-personal-mcp
+```
+
+This writes `~/.codex/config.toml`, which the Codex IDE extension and Codex in the ChatGPT desktop app share,
+so the server is available there too.
+
 Claude Desktop, Cursor, and other clients that use the `mcpServers` format:
 
 ```json

@@ -85,28 +85,29 @@ steps below follow those docs as of October 2026 and haven't been run end to end
 1. Save your Garmin key with `garmin-personal-mcp auth` (see [Authentication](#authentication)).
 2. Create a tunnel in the OpenAI Platform tunnel settings and download `tunnel-client` from
    [openai/tunnel-client](https://github.com/openai/tunnel-client/releases).
-3. Point the tunnel at this server. `tunnel-client` starts it over stdio:
+3. Start the server in HTTP mode and keep it running:
+
+   ```sh
+   garmin-personal-mcp --http      # http://127.0.0.1:8491/mcp
+   ```
+
+4. Point the tunnel at it:
 
    ```sh
    export CONTROL_PLANE_API_KEY="sk-..."   # an OpenAI API key allowed to use the tunnel
-   tunnel-client init --sample sample_mcp_stdio_local --profile garmin \
-     --tunnel-id <your tunnel_id> --mcp-command "garmin-personal-mcp"
+   tunnel-client init --profile garmin --tunnel-id <your tunnel_id> \
+     --mcp-server-url http://127.0.0.1:8491/mcp
    tunnel-client run --profile garmin
    ```
 
-   If `tunnel-client` doesn't see `$(go env GOPATH)/bin` on its PATH, give the full path in `--mcp-command`.
-   To run the server yourself instead, start `garmin-personal-mcp --http` and give `tunnel-client`
-   `--mcp-server-url http://127.0.0.1:8491/mcp` in place of `--mcp-command` (`tunnel-client help quickstart`
-   shows the HTTP setup).
-4. In ChatGPT, open Plugins, select **+** and then **Add custom MCP server**. Under **Connection**, choose
+   `tunnel-client help quickstart` lists the samples `init` accepts. Use HTTP mode rather than letting
+   `tunnel-client` start the server over stdio: only HTTP mode leaves out `garmin_download_activity`.
+5. In ChatGPT, open Plugins, select **+** and then **Add custom MCP server**. Under **Connection**, choose
    **Tunnel** and select your tunnel. Choose **No authentication**: the server has none of its own, and the
    tunnel is reachable only through your OpenAI workspace and Platform organization. Anyone there who can use
    the app or the tunnel reads your Garmin data, so don't share them.
-5. Keep `tunnel-client run` going while you use it; ChatGPT's requests fail while it's stopped.
-
-ChatGPT treats tools that carry the `readOnlyHint` annotation as read actions. Every tool here has it except
-`garmin_download_activity`, which ChatGPT asks you to confirm and which saves the file on the machine running
-the server.
+6. Keep the server and `tunnel-client run` going while you use it; ChatGPT's requests fail while either is
+   stopped.
 
 ## Remote / HTTP mode
 
@@ -115,8 +116,9 @@ garmin-personal-mcp --http                       # http://127.0.0.1:8491/mcp
 garmin-personal-mcp --http --port 8491 --allowed-host garmin.example.ts.net   # behind tailscale serve
 ```
 
-This serves streamable HTTP at `/mcp`. **There is no built-in authentication, so never expose it to the
-internet.** Keep it on `127.0.0.1` and reach it through something that authenticates for you, such as the tunnel
+This serves streamable HTTP at `/mcp` with every tool except `garmin_download_activity`, which saves a file on
+the machine running the server and so is for local clients over stdio only. **There is no built-in
+authentication, so never expose it to the internet.** Keep it on `127.0.0.1` and reach it through something that authenticates for you, such as the tunnel
 above, a VPN or tailnet (e.g. `tailscale serve`), or an authenticating reverse proxy. Use `--host 0.0.0.0` only
 inside a container, and publish the port to the host's `127.0.0.1` only.
 
@@ -153,7 +155,7 @@ Tools that return a list wrap it as `{"results": [...]}`, and when Garmin has no
 | `garmin_search_activities` | Activity search by type, dates, distance, power, start area, dive filters, and more |
 | `garmin_get_activity` | One activity in full, with splits |
 | `garmin_get_activity_workouts` | The structured workout followed during an activity |
-| `garmin_download_activity` | Save an activity's original file (a ZIP holding the .fit) locally |
+| `garmin_download_activity` | Save an activity's original file (a ZIP holding the .fit) locally; stdio only |
 | `garmin_get_profile` | Profile settings: units, display formats, time zone |
 | `garmin_get_heart_rate_zones` | Heart rate zones per sport |
 | `garmin_get_fitness_age` | Fitness age and its components |

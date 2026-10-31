@@ -125,7 +125,12 @@ func saveKey(ctx context.Context) int {
 		return 1
 	}
 	if _, err := garmin.NewClient(garmin.WithAPIKey(key)).ProfileSettings(ctx); err != nil {
-		fmt.Printf("Garmin didn't accept that key, so it wasn't saved: %v\n", err)
+		if errors.Is(err, garmin.ErrAPIKey) {
+			fmt.Fprintf(os.Stderr, "Garmin rejected that key, so it wasn't saved. Check that you copied the whole key, "+
+				"or create a new one at %s.\n", garmin.KeyPage)
+		} else {
+			fmt.Fprintf(os.Stderr, "Couldn't check the key with Garmin, so it wasn't saved: %v\n", err)
+		}
 		return 1
 	}
 	path, err := garmin.SaveAPIKey(key)

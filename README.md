@@ -11,9 +11,9 @@ It is written in Go and runs on Linux, macOS, and Windows.
   hydration, and Body Battery; a year for daily summaries) are split into several requests
 - Model-sized responses: all-day sample arrays (heart rate, SpO2, Body Battery) are left out unless you ask for them
 
-The tool set follows [Mason-Levyy/garmin-personal-mcp](https://github.com/Mason-Levyy/garmin-personal-mcp) (Python).
-
 ## Install
+
+Requires Go 1.27.3 or later.
 
 ```sh
 go install github.com/re3turn/garmin-personal-mcp/cmd/garmin-personal-mcp@latest
@@ -107,7 +107,7 @@ that it returns HTTP 400 for every range. `garmin_get_weight` with `include_all`
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `GARMIN_PERSONAL_API_KEY` | Personal API key; takes precedence over the key file | – |
-| `GARMIN_MCP_DOWNLOAD_DIR` | Where `garmin_download_activity` saves files; nothing is written outside it. A leading `~` expands to your home directory | `~/Downloads/garmin` |
+| `GARMIN_MCP_DOWNLOAD_DIR` | Where `garmin_download_activity` saves files; nothing is written outside it. Must be an absolute path or start with `~/`, which expands to your home directory | `~/Downloads/garmin` |
 | `GARMIN_PERSONAL_API_BASE_URL` | API base URL (`https://personal.connectapi.garmin.cn` for the China region) | `https://personal.connectapi.garmin.com` |
 
 ## Development

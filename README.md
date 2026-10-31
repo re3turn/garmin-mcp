@@ -24,7 +24,7 @@ go install github.com/re3turn/garmin-personal-mcp/cmd/garmin-personal-mcp@latest
 1. Sign in to Garmin Connect on the web and create a key on the
    [Personal API Key](https://connect.garmin.com/app/settings/personalApiToken) page. Keys last from 30 days to
    a year, and Garmin shows each key only once.
-2. Save the key. The input is hidden.
+2. Save the key. The input shows as `*`; Esc or Ctrl-C cancels.
 
    ```sh
    garmin-personal-mcp auth

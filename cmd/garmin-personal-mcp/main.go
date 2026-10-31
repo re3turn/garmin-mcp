@@ -225,14 +225,18 @@ func runHTTP(ctx context.Context, listener net.Listener, mcpServer *mcp.Server, 
 }
 
 func saveKey(ctx context.Context) int {
-	key, err := readKey()
-	// The signal handler absorbs Ctrl-C at the hidden prompt, which leaves the
-	// terminal's echo intact; honor it once input returns.
-	if ctx.Err() != nil {
+	key, err := readKey(ctx)
+	switch {
+	case ctx.Err() != nil:
 		fmt.Fprintln(os.Stderr, "Cancelled; nothing saved.")
 		return cancelledExitCode(ctx)
-	}
-	if err != nil {
+	case errors.Is(err, errInterrupted):
+		fmt.Fprintln(os.Stderr, "Cancelled; nothing saved.")
+		return 130
+	case errors.Is(err, errEscaped):
+		fmt.Fprintln(os.Stderr, "Cancelled; nothing saved.")
+		return 1
+	case err != nil:
 		fmt.Fprintf(os.Stderr, "Couldn't read the key: %v\n", err)
 		return 1
 	}
@@ -241,6 +245,10 @@ func saveKey(ctx context.Context) int {
 		return 1
 	}
 	if _, err := garmin.NewClient(garmin.WithAPIKey(key)).ProfileSettings(ctx); err != nil {
+		if ctx.Err() != nil {
+			fmt.Fprintln(os.Stderr, "Cancelled; nothing saved.")
+			return cancelledExitCode(ctx)
+		}
 		if errors.Is(err, garmin.ErrAPIKey) {
 			fmt.Fprintf(os.Stderr, "Garmin rejected that key, so it wasn't saved. Check that you copied the whole key, "+
 				"or create a new one at %s.\n", garmin.KeyPage)
@@ -271,9 +279,9 @@ func cancelledExitCode(ctx context.Context) int {
 	return 130
 }
 
-// readKey hides input at a terminal. Without one (a pipe, or a shell an agent
+// readKey masks input at a terminal. Without one (a pipe, or a shell an agent
 // runs) it reads one line from stdin, e.g. `pbpaste | garmin-personal-mcp auth`.
-func readKey() (string, error) {
+func readKey(ctx context.Context) (string, error) {
 	fd := int(os.Stdin.Fd())
 	if !term.IsTerminal(fd) {
 		line, err := bufio.NewReader(os.Stdin).ReadString('\n')
@@ -283,13 +291,9 @@ func readKey() (string, error) {
 		return strings.TrimSpace(line), nil
 	}
 	fmt.Fprintf(os.Stderr, "Create a Garmin Connect Personal API key (it is shown only once):\n  %s\n\n", garmin.KeyPage)
-	fmt.Fprint(os.Stderr, "Paste the key (input is hidden): ")
-	key, err := term.ReadPassword(fd)
-	fmt.Fprintln(os.Stderr)
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(key)), nil
+	fmt.Fprint(os.Stderr, "Paste the key and press Enter (Esc or Ctrl-C cancels): ")
+	key, err := readSecret(ctx, fd)
+	return strings.TrimSpace(key), err
 }
 
 func checkKey(ctx context.Context) int {

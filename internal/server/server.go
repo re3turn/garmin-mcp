@@ -66,7 +66,8 @@ func (s *Server) parseDay(value string) (time.Time, error) {
 	}
 	day, err := time.Parse(garmin.DateLayout, value)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("dates must be YYYY-MM-DD, got %q", value)
+		// Covers both a wrong format and a date that doesn't exist (2026-02-30).
+		return time.Time{}, fmt.Errorf("%q is not a valid date; dates must be real calendar days written as YYYY-MM-DD", value)
 	}
 	return day, nil
 }
@@ -83,6 +84,10 @@ func (s *Server) parseRange(start, end string) (time.Time, time.Time, error) {
 	first, err := s.parseDay(start)
 	if err != nil {
 		return time.Time{}, time.Time{}, err
+	}
+	if first.After(last) && end == "" {
+		return time.Time{}, time.Time{}, fmt.Errorf("start (%s) is after today (%s), which end defaults to; pass a start on or before today",
+			first.Format(garmin.DateLayout), last.Format(garmin.DateLayout))
 	}
 	if first.After(last) {
 		return time.Time{}, time.Time{}, fmt.Errorf("start (%s) must be on or before end (%s); swap them",

@@ -154,7 +154,9 @@ func TestBadInputsAreToolErrors(t *testing.T) {
 		want string
 	}{
 		{"garmin_get_sleep", map[string]any{"date": "10/30/2026"}, "YYYY-MM-DD"},
+		{"garmin_get_sleep", map[string]any{"date": "2026-02-30"}, "not a valid date"},
 		{"garmin_get_steps", map[string]any{"start": "2026-10-31", "end": "2026-10-01"}, "swap them"},
+		{"garmin_get_steps", map[string]any{"start": "2026-11-05"}, "after today"},
 		{"garmin_search_activities", map[string]any{"north": 35.7}, "all four edges"},
 		{"garmin_download_activity", map[string]any{"activity_id": 1, "directory": "../x"}, "subfolder"},
 	}

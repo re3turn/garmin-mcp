@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -26,8 +27,9 @@ func day(t *testing.T, value string) time.Time {
 	return parsed
 }
 
-// recorder answers GETs by the first route whose key is a prefix of the path,
-// and 204 for anything unrouted.
+// recorder answers GETs by a route whose key is a prefix of the path, and 204
+// for anything unrouted. Routes is a map, so keep its prefixes from
+// overlapping: which of two matching routes answers is not defined.
 type recorder struct {
 	mu       sync.Mutex
 	requests []string
@@ -90,11 +92,118 @@ func TestDailySummariesConcatenatesData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(r.requests) != 2 {
+	want := []string{
+		"/usersummary-service/v2/dailysummaries?endDate=2025-12-31&startDate=2025-01-01",
+		"/usersummary-service/v2/dailysummaries?endDate=2026-01-05&startDate=2026-01-01",
+	}
+	if !reflect.DeepEqual(r.requests, want) {
 		t.Errorf("requests = %v", r.requests)
 	}
 	if rows := got.(map[string]any)["data"].([]any); len(rows) != 2 {
 		t.Errorf("data = %v", rows)
+	}
+}
+
+// Each endpoint's documented maximum must fit in one request, and one more day
+// must not.
+func TestRangeLimitsPerEndpoint(t *testing.T) {
+	cases := []struct {
+		name    string
+		maxDays int
+		fetch   func(c *Client, start, end time.Time) (any, error)
+	}{
+		{"steps", 28, func(c *Client, s, e time.Time) (any, error) { return c.Stats(context.Background(), StatSteps, s, e) }},
+		{"stress", 28, func(c *Client, s, e time.Time) (any, error) { return c.Stats(context.Background(), StatStress, s, e) }},
+		{"hydration", 31, func(c *Client, s, e time.Time) (any, error) {
+			return c.Stats(context.Background(), StatHydration, s, e)
+		}},
+		{"sleep summaries", 31, func(c *Client, s, e time.Time) (any, error) { return c.SleepSummaries(context.Background(), s, e) }},
+		{"body battery", 31, func(c *Client, s, e time.Time) (any, error) { return c.BodyBattery(context.Background(), s, e, nil) }},
+		{"daily summaries", 365, func(c *Client, s, e time.Time) (any, error) { return c.DailySummaries(context.Background(), s, e) }},
+	}
+	start := day(t, "2025-01-01")
+	for _, tc := range cases {
+		for _, extra := range []int{0, 1} {
+			t.Run(fmt.Sprintf("%s +%d", tc.name, extra), func(t *testing.T) {
+				r, c := newRecorder(t, nil)
+				if _, err := tc.fetch(c, start, start.AddDate(0, 0, tc.maxDays-1+extra)); err != nil {
+					t.Fatal(err)
+				}
+				if want := 1 + extra; len(r.requests) != want {
+					t.Errorf("requests = %d, want %d: %v", len(r.requests), want, r.requests)
+				}
+			})
+		}
+	}
+}
+
+func TestEndpointPathsAndQueries(t *testing.T) {
+	d := day(t, "2026-10-30")
+	cases := []struct {
+		name string
+		call func(c *Client) (any, error)
+		want string
+	}{
+		{"daily summary", func(c *Client) (any, error) { return c.DailySummary(context.Background(), d) },
+			"/usersummary-service/usersummary/daily?calendarDate=2026-10-30"},
+		{"sleep", func(c *Client) (any, error) { return c.Sleep(context.Background(), d) },
+			"/sleep-service/sleep/dailySleep?date=2026-10-30"},
+		{"hrv", func(c *Client) (any, error) { return c.HRV(context.Background(), d) },
+			"/hrv-service/hrv/2026-10-30"},
+		{"hrv summaries", func(c *Client) (any, error) { return c.HRVSummaries(context.Background(), d, d) },
+			"/hrv-service/hrv/daily/2026-10-30/2026-10-30"},
+		{"heart rate", func(c *Client) (any, error) { return c.HeartRate(context.Background(), d, false) },
+			"/wellness-service/wellness/dailyHeartRate?date=2026-10-30"},
+		{"spo2", func(c *Client) (any, error) { return c.SpO2(context.Background(), d, false) },
+			"/wellness-service/wellness/daily/spo2acclimation/2026-10-30"},
+		{"wellness activities", func(c *Client) (any, error) { return c.WellnessActivities(context.Background(), d, d) },
+			"/wellnessactivity-service/activity/summary/range/2026-10-30/2026-10-30"},
+		{"weight", func(c *Client) (any, error) { return c.Weight(context.Background(), d, d, true) },
+			"/weight-service/weight/range/2026-10-30/2026-10-30?includeAll=true"},
+		{"weight goals", func(c *Client) (any, error) { return c.WeightGoals(context.Background(), d, d) },
+			"/goal-service/goal/user/effective/weightgoal/2026-10-30/2026-10-30"},
+		{"food log", func(c *Client) (any, error) {
+			return c.FoodLog(context.Background(), d, FoodLogOptions{MealID: new(3), IncludeGoals: true, IncludeNutrition: false, IncludeMedia: true})
+		}, "/nutrition-service/food/logs/2026-10-30?includeGoals=true&includeMedia=true&includeNutrition=false&mealId=3"},
+		{"menstrual cycle", func(c *Client) (any, error) { return c.MenstrualCycle(context.Background(), d) },
+			"/periodichealth-service/menstrualcycle/summary/2026-10-30"},
+		{"menstrual day", func(c *Client) (any, error) {
+			return c.MenstrualDay(context.Background(), d, MenstrualDayOptions{Today: day(t, "2026-10-31"), Reduced: true, SkipBabyMovement: true})
+		}, "/periodichealth-service/menstrualcycle/dayview/2026-10-30?includeAnalysis=false&reducedResponse=true&skipbm=true&todayDate=2026-10-31"},
+		{"activity", func(c *Client) (any, error) { return c.Activity(context.Background(), 21234567890) },
+			"/activity-service/activity/21234567890"},
+		{"activity workouts", func(c *Client) (any, error) { return c.ActivityWorkouts(context.Background(), 7) },
+			"/activity-service/activity/7/workouts"},
+		{"profile", func(c *Client) (any, error) { return c.ProfileSettings(context.Background()) },
+			"/userprofile-service/userprofile/settings"},
+		{"heart rate zones", func(c *Client) (any, error) { return c.HeartRateZones(context.Background(), false) },
+			"/biometric-service/heartRateZones/v2?generateDefaults=false"},
+		{"fitness age", func(c *Client) (any, error) { return c.FitnessAge(context.Background(), d, true) },
+			"/fitnessage-service/fitnessage/v2/2026-10-30?fullHistoryScan=true"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			r, c := newRecorder(t, nil)
+			if _, err := tc.call(c); err != nil {
+				t.Fatal(err)
+			}
+			if len(r.requests) != 1 || r.requests[0] != tc.want {
+				t.Errorf("requests = %v, want [%s]", r.requests, tc.want)
+			}
+		})
+	}
+}
+
+func TestSearchActivitiesFavoriteFalseAndDecoDive(t *testing.T) {
+	r, c := newRecorder(t, nil)
+	_, err := c.SearchActivities(context.Background(), ActivitySearch{Favorite: new(false), DecoDive: new(true), Limit: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"favorite=0", "decoDive=true", "limit=5"} {
+		if !strings.Contains(r.requests[0], want) {
+			t.Errorf("query %s lacks %s", r.requests[0], want)
+		}
 	}
 }
 

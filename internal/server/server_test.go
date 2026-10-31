@@ -76,6 +76,16 @@ func call(t *testing.T, session *mcp.ClientSession, name string, args map[string
 	return result, decoded
 }
 
+// requestAt fails the test instead of panicking when a tool errored before
+// reaching Garmin.
+func requestAt(t *testing.T, requests []string, i int) string {
+	t.Helper()
+	if len(requests) <= i {
+		t.Fatalf("Garmin received %d requests, want at least %d: %v", len(requests), i+1, requests)
+	}
+	return requests[i]
+}
+
 func TestToolsAreListedWithOptionalArguments(t *testing.T) {
 	session, _ := connect(t, func(http.ResponseWriter, *http.Request) {})
 	list, err := session.ListTools(context.Background(), nil)
@@ -85,14 +95,16 @@ func TestToolsAreListedWithOptionalArguments(t *testing.T) {
 	if len(list.Tools) != 26 {
 		t.Errorf("tools = %d, want 26", len(list.Tools))
 	}
+	needsActivityID := []string{"garmin_get_activity", "garmin_get_activity_workouts", "garmin_download_activity"}
 	for _, tool := range list.Tools {
 		schema := tool.InputSchema.(map[string]any)
 		required, _ := schema["required"].([]any)
-		if strings.Contains(tool.Name, "activity") && slices.Contains(required, any("activity_id")) {
-			continue
+		var want []any
+		if slices.Contains(needsActivityID, tool.Name) {
+			want = []any{"activity_id"}
 		}
-		if len(required) > 0 {
-			t.Errorf("%s requires %v", tool.Name, required)
+		if !slices.Equal(required, want) {
+			t.Errorf("%s requires %v, want %v", tool.Name, required, want)
 		}
 		if tool.Annotations == nil || tool.Description == "" {
 			t.Errorf("%s lacks annotations or a description", tool.Name)
@@ -106,11 +118,12 @@ func TestEmbeddedInputsAreFlattened(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, tool := range list.Tools {
-		if tool.Name != "garmin_get_body_battery" {
-			continue
-		}
-		properties := tool.InputSchema.(map[string]any)["properties"].(map[string]any)
+	i := slices.IndexFunc(list.Tools, func(tool *mcp.Tool) bool { return tool.Name == "garmin_get_body_battery" })
+	if i < 0 {
+		t.Fatal("garmin_get_body_battery is not listed")
+	}
+	{
+		properties := list.Tools[i].InputSchema.(map[string]any)["properties"].(map[string]any)
 		for _, name := range []string{"start", "end", "chunks"} {
 			property, ok := properties[name].(map[string]any)
 			if !ok {
@@ -130,8 +143,8 @@ func TestRangeDefaultsToSevenDaysEndingToday(t *testing.T) {
 	if result.IsError {
 		t.Fatal(result.Content[0].(*mcp.TextContent).Text)
 	}
-	if want := "/usersummary-service/stats/steps/daily/2026-10-25/2026-10-31"; (*requests)[0] != want {
-		t.Errorf("request = %s, want %s", (*requests)[0], want)
+	if got, want := requestAt(t, *requests, 0), "/usersummary-service/stats/steps/daily/2026-10-25/2026-10-31"; got != want {
+		t.Errorf("request = %s, want %s", got, want)
 	}
 	if results, ok := got["results"].([]any); !ok || len(results) != 0 {
 		t.Errorf("got %v, want an empty results list", got)
@@ -175,7 +188,7 @@ func TestBadInputsAreToolErrors(t *testing.T) {
 func TestSearchActivitiesDefaults(t *testing.T) {
 	session, requests := connect(t, func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, `[]`) })
 	call(t, session, "garmin_search_activities", map[string]any{"start": "2026-10-01"})
-	got := (*requests)[0]
+	got := requestAt(t, *requests, 0)
 	for _, want := range []string{"limit=10", "start=0", "excludeChildren=true", "startDate=2026-10-01", "endDate=2026-10-31"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("query %s lacks %s", got, want)
@@ -186,7 +199,7 @@ func TestSearchActivitiesDefaults(t *testing.T) {
 func TestSearchActivitiesEndAloneHasNoStart(t *testing.T) {
 	session, requests := connect(t, func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, `[]`) })
 	call(t, session, "garmin_search_activities", map[string]any{"end": "2024-01-01"})
-	got := (*requests)[0]
+	got := requestAt(t, *requests, 0)
 	if !strings.Contains(got, "endDate=2024-01-01") || strings.Contains(got, "startDate") {
 		t.Errorf("query = %s, want endDate only", got)
 	}
@@ -196,10 +209,59 @@ func TestDefaultTrueBooleans(t *testing.T) {
 	session, requests := connect(t, func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, `{}`) })
 	call(t, session, "garmin_get_food_log", map[string]any{"date": "2026-10-30"})
 	call(t, session, "garmin_get_heart_rate_zones", map[string]any{"generate_defaults": false})
-	if got := (*requests)[0]; !strings.Contains(got, "includeGoals=true") || !strings.Contains(got, "includeNutrition=true") {
+	if got := requestAt(t, *requests, 0); !strings.Contains(got, "includeGoals=true") || !strings.Contains(got, "includeNutrition=true") {
 		t.Errorf("food log query = %s", got)
 	}
-	if got := (*requests)[1]; !strings.Contains(got, "generateDefaults=false") {
+	if got := requestAt(t, *requests, 1); !strings.Contains(got, "generateDefaults=false") {
 		t.Errorf("zones query = %s", got)
+	}
+}
+
+// Each case checks that one argument, or its default, reaches Garmin. Today
+// is 2026-10-31 (testToday).
+func TestArgumentsReachGarmin(t *testing.T) {
+	cases := []struct {
+		tool string
+		args map[string]any
+		want string
+	}{
+		{"garmin_get_sleep", nil, "/sleep-service/sleep/dailySleep?date=2026-10-31"},
+		{"garmin_get_steps", map[string]any{"end": "2026-10-10"}, "/usersummary-service/stats/steps/daily/2026-10-04/2026-10-10"},
+		{"garmin_get_menstrual_day", map[string]any{"date": "2026-10-30"}, "todayDate=2026-10-31"},
+		{"garmin_get_menstrual_day", map[string]any{"date": "2026-10-30", "today": "2026-10-29"}, "todayDate=2026-10-29"},
+		{"garmin_search_activities", map[string]any{"exclude_children": false}, "excludeChildren=false"},
+		{"garmin_search_activities", map[string]any{"favorite": false}, "favorite=0"},
+		{"garmin_get_food_log", map[string]any{"include_goals": false}, "includeGoals=false"},
+		{"garmin_get_fitness_age", nil, "fullHistoryScan=true"},
+		{"garmin_get_fitness_age", map[string]any{"full_history_scan": false}, "fullHistoryScan=false"},
+		{"garmin_get_heart_rate_zones", nil, "generateDefaults=true"},
+		{"garmin_get_weight", map[string]any{"include_all": true}, "includeAll=true"},
+		{"garmin_get_body_battery", map[string]any{"chunks": 24}, "chunks=24"},
+	}
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("%s %v", tc.tool, tc.args), func(t *testing.T) {
+			session, requests := connect(t, func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, `[]`) })
+			result, _ := call(t, session, tc.tool, tc.args)
+			if result.IsError {
+				t.Fatal(result.Content[0].(*mcp.TextContent).Text)
+			}
+			if got := requestAt(t, *requests, 0); !strings.Contains(got, tc.want) {
+				t.Errorf("request = %s, want %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIncludeSamplesKeepsAllDayReadings(t *testing.T) {
+	session, _ := connect(t, func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, `{"restingHeartRate":50,"heartRateValues":[[1,2]]}`)
+	})
+	_, without := call(t, session, "garmin_get_heart_rate", nil)
+	_, with := call(t, session, "garmin_get_heart_rate", map[string]any{"include_samples": true})
+	if _, ok := without["heartRateValues"]; ok {
+		t.Error("samples returned without include_samples")
+	}
+	if _, ok := with["heartRateValues"]; !ok {
+		t.Error("samples dropped despite include_samples")
 	}
 }

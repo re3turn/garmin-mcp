@@ -399,6 +399,9 @@ func (s *Server) addActivityTools(server *mcp.Server) {
 		return s.client.ActivityWorkouts(ctx, in.ActivityID)
 	})
 
+	if s.remote {
+		return
+	}
 	addTool(server, &mcp.Tool{
 		Name: "garmin_download_activity", Title: "Download activity file", Annotations: savesLocalFile,
 		Description: "Download an activity's original file (a ZIP, usually holding a .fit) and save it on the " +

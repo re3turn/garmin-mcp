@@ -22,10 +22,20 @@ var (
 type Server struct {
 	client *garmin.Client
 	today  func() time.Time
+	// remote leaves out tools that write on the server's machine: the file
+	// wouldn't reach a remote caller, and HTTP has no authentication to gate it.
+	remote bool
 }
 
+// New serves every tool, for a local client over stdio.
 func New(client *garmin.Client, version string) *mcp.Server {
 	s := &Server{client: client, today: time.Now}
+	return s.mcpServer(version)
+}
+
+// NewRemote serves only the tools that read from Garmin, for --http.
+func NewRemote(client *garmin.Client, version string) *mcp.Server {
+	s := &Server{client: client, today: time.Now, remote: true}
 	return s.mcpServer(version)
 }
 

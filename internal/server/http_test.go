@@ -7,15 +7,15 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
+// newHTTPServer serves what --http serves. No test here calls Garmin, so it
+// needs no client.
 func newHTTPServer(t *testing.T, extraHosts ...string) *httptest.Server {
 	t.Helper()
-	s := &Server{today: func() time.Time { return testToday }}
-	ts := httptest.NewServer(HTTPHandler(s.mcpServer("test"), extraHosts))
+	ts := httptest.NewServer(HTTPHandler(NewRemote(nil, "test"), extraHosts))
 	t.Cleanup(ts.Close)
 	return ts
 }
@@ -33,8 +33,18 @@ func TestHTTPServesToolsOverStreamableHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(list.Tools) != 26 {
-		t.Errorf("tools = %d, want 26", len(list.Tools))
+	// Every tool but garmin_download_activity, which writes on the server's
+	// machine and is for local clients only.
+	if len(list.Tools) != 25 {
+		t.Errorf("tools = %d, want 25", len(list.Tools))
+	}
+	for _, tool := range list.Tools {
+		if tool.Name == "garmin_download_activity" {
+			t.Error("garmin_download_activity is served over HTTP")
+		}
+		if tool.Annotations == nil || !tool.Annotations.ReadOnlyHint {
+			t.Errorf("%s is served over HTTP but isn't read-only", tool.Name)
+		}
 	}
 }
 

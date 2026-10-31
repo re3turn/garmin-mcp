@@ -174,7 +174,7 @@ func serve(ctx context.Context) int {
 }
 
 func serveHTTP(ctx context.Context, addr string, allowedHosts []string) int {
-	handler := server.HTTPHandler(server.New(garmin.NewClient(), buildVersion()), allowedHosts)
+	handler := server.HTTPHandler(server.NewRemote(garmin.NewClient(), buildVersion()), allowedHosts)
 	httpServer := &http.Server{Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {

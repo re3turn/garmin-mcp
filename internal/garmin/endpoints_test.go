@@ -262,6 +262,10 @@ func TestDownloadDirExpandsHome(t *testing.T) {
 	if got, err := DownloadDir(); err != nil || got != filepath.Join(home, "Downloads", "garmin") {
 		t.Errorf("default: %q, %v", got, err)
 	}
+	t.Setenv(DownloadDirEnvVar, "downloads")
+	if got, err := DownloadDir(); err == nil {
+		t.Errorf("relative path accepted as %q", got)
+	}
 }
 
 func TestDownloadTargetStaysInsideDownloadDir(t *testing.T) {

@@ -168,10 +168,15 @@ func (c *Client) DownloadActivity(ctx context.Context, activityID int64, directo
 }
 
 // DownloadDir expands a leading ~ itself because MCP clients pass env values
-// without a shell.
+// without a shell. It rejects relative paths, which would resolve against the
+// server's working directory: MCP clients leave that unspecified (often / for
+// GUI apps).
 func DownloadDir() (string, error) {
 	dir := os.Getenv(DownloadDirEnvVar)
 	if dir != "" && dir != "~" && !strings.HasPrefix(dir, "~/") && !strings.HasPrefix(dir, `~\`) {
+		if !filepath.IsAbs(dir) {
+			return "", fmt.Errorf("%s must be an absolute path or start with ~/, got %q", DownloadDirEnvVar, dir)
+		}
 		return dir, nil
 	}
 	home, err := os.UserHomeDir()

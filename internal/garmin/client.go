@@ -114,10 +114,10 @@ func (c *Client) Download(ctx context.Context, path string) ([]byte, error) {
 	return body, nil
 }
 
-// do retries once with a freshly exchanged token on 401, because Garmin can
-// revoke a bearer token before its exp claim.
+// do retries once with another token on 401, because Garmin can revoke a
+// bearer token before its exp claim.
 func (c *Client) do(ctx context.Context, path string, query url.Values, accept string) ([]byte, error) {
-	token, err := c.auth.Token(ctx, false)
+	token, err := c.auth.Token(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (c *Client) do(ctx context.Context, path string, query url.Values, accept s
 	if !IsUnauthorized(err) {
 		return body, err
 	}
-	token, err = c.auth.Token(ctx, true)
+	token, err = c.auth.Token(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,13 @@ func (c *Client) get(ctx context.Context, path string, query url.Values, accept,
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &HTTPError{StatusCode: resp.StatusCode, Method: http.MethodGet, Path: path, Body: string(body)}
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Method: http.MethodGet, Path: path, Body: redact(body, token)}
 	}
 	return body, nil
+}
+
+// redact hides the credential a request sent, in case a proxy or gateway
+// echoes request headers into its error page: error bodies reach the model.
+func redact(body []byte, secret string) string {
+	return strings.ReplaceAll(string(body), secret, "[redacted]")
 }

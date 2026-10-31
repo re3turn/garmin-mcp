@@ -161,33 +161,10 @@ func (c *Client) DownloadActivity(ctx context.Context, activityID int64, directo
 		files = append(files, file.Name)
 	}
 	path := filepath.Join(directory, fmt.Sprintf("activity-%d.zip", activityID))
-	if err := writeReplacing(path, content); err != nil {
+	if err := replaceFile(path, content, 0o755); err != nil {
 		return nil, err
 	}
 	return &DownloadedFile{Path: path, Bytes: len(content), Files: files}, nil
-}
-
-// writeReplacing writes through a temp file so a failed download never leaves
-// a truncated ZIP behind. os.Rename replaces an existing file on every OS Go
-// supports, including Windows.
-func writeReplacing(path string, content []byte) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	temp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".*")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(temp.Name())
-	if _, err := temp.Write(content); err != nil {
-		temp.Close()
-		return err
-	}
-	if err := temp.Close(); err != nil {
-		return err
-	}
-	return os.Rename(temp.Name(), path)
 }
 
 // DownloadDir expands a leading ~ itself because MCP clients pass env values

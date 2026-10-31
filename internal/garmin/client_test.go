@@ -2,7 +2,9 @@ package garmin
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +17,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 var testNow = time.Date(2026, 10, 31, 12, 0, 0, 0, time.UTC)
@@ -135,18 +138,60 @@ func TestTokenIsCachedAcrossClients(t *testing.T) {
 	assertPrivate(t, filepath.Join(home, ".config", "garmin", "connect-personal-api-bearer-token.json"))
 }
 
-func TestCachedTokenInsideRefreshWindowIsReplaced(t *testing.T) {
-	isolate(t)
-	f := newFakeGarmin(t, func(w http.ResponseWriter, _ *http.Request, _ string) { fmt.Fprint(w, `{}`) })
+// Tokens last 24 hours from testNow and are replaced within an hour of expiry.
+func TestCachedTokenRefreshWindow(t *testing.T) {
+	cases := []struct {
+		name          string
+		elapsed       time.Duration
+		wantExchanges int32
+	}{
+		{"outside the window is reused", 22*time.Hour + 59*time.Minute, 1},
+		{"inside the window is replaced", 23*time.Hour + time.Minute, 2},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			isolate(t)
+			f := newFakeGarmin(t, func(w http.ResponseWriter, _ *http.Request, _ string) { fmt.Fprint(w, `{}`) })
+			if _, err := f.client().Get(context.Background(), "/x", nil); err != nil {
+				t.Fatal(err)
+			}
+			later := NewClient(WithBaseURL(f.server.URL), WithClock(func() time.Time { return testNow.Add(tc.elapsed) }))
+			if _, err := later.Get(context.Background(), "/x", nil); err != nil {
+				t.Fatal(err)
+			}
+			if n := f.exchanges.Load(); n != tc.wantExchanges {
+				t.Errorf("exchanges = %d, want %d", n, tc.wantExchanges)
+			}
+		})
+	}
+}
+
+// Garmin's Python client writes expires_at as a float, and the cache file is
+// shared with it.
+func TestCacheWrittenByPythonClientIsReused(t *testing.T) {
+	home := isolate(t)
+	f := newFakeGarmin(t, func(w http.ResponseWriter, _ *http.Request, token string) {
+		if token != "python" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		fmt.Fprint(w, `{}`)
+	})
+	sum := sha256.Sum256([]byte(f.server.URL + "\x00test-key"))
+	cache := fmt.Sprintf(`{"fingerprint": %q, "access_token": "h.p.python", "expires_at": %d.25}`,
+		hex.EncodeToString(sum[:]), testNow.Add(10*time.Hour).Unix())
+	path := filepath.Join(home, ".config", "garmin", "connect-personal-api-bearer-token.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(cache), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := f.client().Get(context.Background(), "/x", nil); err != nil {
 		t.Fatal(err)
 	}
-	later := NewClient(WithBaseURL(f.server.URL), WithClock(func() time.Time { return testNow.Add(23*time.Hour + time.Minute) }))
-	if _, err := later.Get(context.Background(), "/x", nil); err != nil {
-		t.Fatal(err)
-	}
-	if n := f.exchanges.Load(); n != 2 {
-		t.Errorf("exchanges = %d, want 2", n)
+	if n := f.exchanges.Load(); n != 0 {
+		t.Errorf("exchanges = %d, want the Python client's token reused", n)
 	}
 }
 
@@ -188,8 +233,33 @@ func TestUnauthorizedTwiceSurfaces(t *testing.T) {
 	if !IsUnauthorized(err) {
 		t.Fatalf("err = %v, want HTTP 401", err)
 	}
-	if g := f.gets.Load(); g != 2 {
-		t.Errorf("gets = %d, want 2", g)
+	if e, g := f.exchanges.Load(), f.gets.Load(); e != 2 || g != 2 {
+		t.Errorf("exchanges, gets = %d, %d; want 2, 2", e, g)
+	}
+}
+
+func TestDownloadReturnsBytes(t *testing.T) {
+	isolate(t)
+	f := newFakeGarmin(t, func(w http.ResponseWriter, r *http.Request, _ string) {
+		if accept := r.Header.Get("Accept"); !strings.Contains(accept, "application/zip") {
+			t.Errorf("Accept = %q", accept)
+		}
+		fmt.Fprint(w, "PK\x03\x04")
+	})
+	got, err := f.client().Download(context.Background(), "/download-service/files/activity/1")
+	if err != nil || string(got) != "PK\x03\x04" {
+		t.Fatalf("got %q, %v", got, err)
+	}
+}
+
+func TestErrorBodyIsTruncatedOnRuneBoundary(t *testing.T) {
+	body := strings.Repeat("a", maxErrorBody-1) + "é" + strings.Repeat("b", 100)
+	msg := (&HTTPError{StatusCode: 500, Method: "GET", Path: "/x", Body: body}).Error()
+	if !utf8.ValidString(msg) {
+		t.Errorf("message is not valid UTF-8: %q", msg[len(msg)-10:])
+	}
+	if !strings.HasSuffix(msg, "...") || strings.Contains(msg, "b") {
+		t.Errorf("body was not truncated: ...%q", msg[len(msg)-10:])
 	}
 }
 
@@ -254,4 +324,34 @@ func TestResolveAPIKey(t *testing.T) {
 	if key, err := ResolveAPIKey(); err != nil || key != "from-env" {
 		t.Errorf("env key = %q, %v", key, err)
 	}
+}
+
+func TestEmptyKeyFileIsAKeyError(t *testing.T) {
+	setHome(t)
+	t.Setenv(KeyEnvVar, "")
+	os.Unsetenv(KeyEnvVar)
+	if _, err := SaveAPIKey(" "); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ResolveAPIKey(); !errors.Is(err, ErrAPIKey) || !strings.Contains(err.Error(), "empty") {
+		t.Fatalf("err = %v, want an empty key file error", err)
+	}
+}
+
+func TestSavingOverAReadableKeyFileTightensIt(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("file modes don't apply on Windows")
+	}
+	home := setHome(t)
+	path := filepath.Join(home, ".config", "garmin", "connect-personal-api-key")
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("old\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := SaveAPIKey("new"); err != nil {
+		t.Fatal(err)
+	}
+	assertPrivate(t, path)
 }

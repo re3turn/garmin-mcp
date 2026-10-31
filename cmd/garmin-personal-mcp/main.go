@@ -107,6 +107,12 @@ func run(args []string) int {
 		fmt.Fprintf(os.Stderr, "--%s needs --http\n\n%s", misplaced, usage)
 		return 2
 	}
+	for _, name := range allowedHosts {
+		if err := server.ValidateAllowedHost(name); err != nil {
+			fmt.Fprintf(os.Stderr, "--allowed-host: %v\n", err)
+			return 2
+		}
+	}
 	switch command {
 	case "", "serve":
 		if *useHTTP {

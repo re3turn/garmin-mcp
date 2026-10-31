@@ -25,6 +25,8 @@ func TestExitCodes(t *testing.T) {
 		{[]string{"--port", "9000"}, 2},
 		{[]string{"serve", "--allowed-host", "proxy.example"}, 2},
 		{[]string{"auth", "--http"}, 2},
+		{[]string{"--http", "--allowed-host", "https://proxy.example"}, 2},
+		{[]string{"--http", "--allowed-host", "--", "serve"}, 2},
 	}
 	for _, tc := range cases {
 		if got := run(tc.args); got != tc.want {

@@ -68,27 +68,50 @@ func post(t *testing.T, ts *httptest.Server, host, origin string) int {
 func TestHTTPHostAndOriginChecks(t *testing.T) {
 	ts := newHTTPServer(t, "garmin.example.ts.net", "proxy.example:443", "")
 	port := ts.URL[strings.LastIndex(ts.URL, ":")+1:]
+	// An empty host sends the test server's own address, 127.0.0.1:<port>.
 	cases := []struct {
 		host, origin string
 		want         int
 	}{
 		{"", "", http.StatusOK},
 		{"localhost:" + port, "", http.StatusOK},
+		{"localhost.:" + port, "", http.StatusOK},
 		{"[::1]:" + port, "", http.StatusOK},
+		{"127.0.0.2:" + port, "", http.StatusOK},
+		{"[::ffff:127.0.0.1]:" + port, "", http.StatusOK},
 		{"GARMIN.example.ts.net", "", http.StatusOK},
 		{"proxy.example", "", http.StatusOK},
 		{"evil.example", "", http.StatusForbidden},
 		{"", "http://localhost:3000", http.StatusOK},
-		{"", "https://garmin.example.ts.net", http.StatusOK},
+		{"", "http://[::1]:3000", http.StatusOK},
+		{"", "HTTP://LOCALHOST", http.StatusOK},
+		{"", "https://garmin.example.ts.net.", http.StatusOK},
 		{"", "https://evil.example", http.StatusForbidden},
 		{"", "null", http.StatusForbidden},
 	}
 	for _, tc := range cases {
-		t.Run(fmt.Sprintf("host=%q origin=%q", tc.host, tc.origin), func(t *testing.T) {
+		hostLabel := tc.host
+		if hostLabel == "" {
+			hostLabel = "(default 127.0.0.1)"
+		}
+		t.Run(fmt.Sprintf("host=%s origin=%q", hostLabel, tc.origin), func(t *testing.T) {
 			if got := post(t, ts, tc.host, tc.origin); got != tc.want {
 				t.Errorf("status = %d, want %d", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestValidateAllowedHost(t *testing.T) {
+	for _, valid := range []string{"proxy.example", "proxy.example:443", "[fd00::1]", "[fd00::1]:8443", "GARMIN.example.ts.net"} {
+		if err := ValidateAllowedHost(valid); err != nil {
+			t.Errorf("%q rejected: %v", valid, err)
+		}
+	}
+	for _, invalid := range []string{"", "https://proxy.example", "proxy.example/mcp", "proxy example", "--", "-x", "proxy.example:https", "proxy.example:70000"} {
+		if err := ValidateAllowedHost(invalid); err == nil {
+			t.Errorf("%q accepted", invalid)
+		}
 	}
 }
 

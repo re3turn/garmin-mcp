@@ -120,7 +120,8 @@ This serves streamable HTTP at `/mcp` with every tool except `garmin_download_ac
 the machine running the server and so is for local clients over stdio only. **There is no built-in
 authentication, so never expose it to the internet.** Keep it on `127.0.0.1` and reach it through something that authenticates for you, such as the tunnel
 above, a VPN or tailnet (e.g. `tailscale serve`), or an authenticating reverse proxy. Use `--host 0.0.0.0` only
-inside a container, and publish the port to the host's `127.0.0.1` only.
+inside a container, and publish the port to the host's `127.0.0.1` only. `127.0.0.1` keeps out other machines,
+not other users of this one: on a shared machine, anyone logged in can connect and read your Garmin data.
 
 Requests are accepted only when their `Host` header is `127.0.0.1`, `localhost`, `::1`, or a name passed with
 `--allowed-host` (repeatable), and a browser `Origin` header must name one of those hosts too. This keeps web

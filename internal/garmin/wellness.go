@@ -10,7 +10,7 @@ import (
 // dropped unless the caller asks for them.
 var (
 	heartRateSamples   = []string{"heartRateValues", "heartRateValueDescriptors"}
-	spo2Samples        = []string{"spO2SingleValues", "spO2SingleValuesDescriptorList"}
+	spo2Samples        = []string{"spO2SingleValues", "spO2SingleValuesDescriptorList", "monitoringEnvironmentValues", "monitoringEnvironmentValuesDescriptorList"}
 	bodyBatterySamples = []string{"bodyBatteryValuesArray", "bodyBatteryValueDescriptorDTOList"}
 )
 

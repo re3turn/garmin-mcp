@@ -110,7 +110,7 @@ func TestSamplesAreDroppedUnlessRequested(t *testing.T) {
 	_, c := newRecorder(t, map[string]func(http.ResponseWriter){
 		"/wellness-service/wellness/dailyHeartRate":    body(`{"restingHeartRate":50,"heartRateValues":[[1,2]],"heartRateValueDescriptors":[]}`),
 		"/wellness-service/wellness/bodyBattery/":      body(`[{"charged":40,"bodyBatteryValuesArray":[[1,2]],"bodyBatteryValueDescriptorDTOList":[]}]`),
-		"/wellness-service/wellness/daily/spo2acclima": body(`{"averageSpO2":97,"spO2SingleValues":[1]}`),
+		"/wellness-service/wellness/daily/spo2acclima": body(`{"averageSpO2":97,"spO2SingleValues":[1],"monitoringEnvironmentValues":[[1,2]]}`),
 	})
 	ctx := context.Background()
 	today := day(t, "2026-10-31")
@@ -124,6 +124,9 @@ func TestSamplesAreDroppedUnlessRequested(t *testing.T) {
 		t.Error("heart rate samples dropped despite include_samples")
 	}
 	spo2, _ := c.SpO2(ctx, today, false)
+	if _, ok := spo2.(map[string]any)["monitoringEnvironmentValues"]; ok {
+		t.Error("SpO2 monitoring environment samples kept")
+	}
 	if _, ok := spo2.(map[string]any)["spO2SingleValues"]; ok {
 		t.Error("SpO2 samples kept")
 	}

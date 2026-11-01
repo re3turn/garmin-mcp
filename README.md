@@ -183,6 +183,14 @@ go test ./...   # no network and no Garmin account needed
 go vet ./...
 ```
 
+Garmin does not publish the OpenAPI spec as a file; the
+[Swagger docs page](https://developer.garmin.com/gc-developer-program/personal/swagger-docs/)
+embeds it in a JavaScript bundle. To pull it out into `api/openapi.json`:
+
+```sh
+go run ./tools/fetch-openapi/   # -o - prints it to stdout instead
+```
+
 ## License
 
 [MIT](LICENSE). Garmin and Garmin Connect are trademarks of Garmin Ltd. or its subsidiaries.

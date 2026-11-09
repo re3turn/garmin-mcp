@@ -100,7 +100,7 @@ func promptEnded(ctx context.Context, err error) (int, bool) {
 // warnIfNotSignedIn says at startup what the unofficial tools' first call
 // would otherwise be the first to report. The server still starts: the
 // Personal API tools work without the sign-in, and one can sign in while it
-// runs, since the token file is read on each call.
+// runs, since the token file is read whenever no usable token is in memory.
 func warnIfNotSignedIn() {
 	if err := garmin.CheckConnectSignIn(); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning (--unofficial): %v The other tools work as usual.\n", err)

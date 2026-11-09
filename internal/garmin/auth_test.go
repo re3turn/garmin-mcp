@@ -247,7 +247,7 @@ func TestRejectedFileKeyPointsAtAuth(t *testing.T) {
 	}))
 	defer server.Close()
 	_, err := NewClient(WithBaseURL(server.URL)).Get(context.Background(), "/x", nil)
-	if !errors.Is(err, ErrAPIKey) || !strings.Contains(err.Error(), "run `garmin-personal-mcp auth`") ||
+	if !errors.Is(err, ErrAPIKey) || !strings.Contains(err.Error(), "run `garmin-mcp auth`") ||
 		strings.Contains(err.Error(), "MCP client's configuration") {
 		t.Errorf("err = %v, want the hint to run auth", err)
 	}

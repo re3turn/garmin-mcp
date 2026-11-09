@@ -33,11 +33,11 @@ const (
 
 var (
 	ReconnectHint = fmt.Sprintf(
-		"Create a key at %s and run `garmin-personal-mcp auth` (or set %s).", KeyPage, KeyEnvVar)
+		"Create a key at %s and run `garmin-mcp auth` (or set %s).", KeyPage, KeyEnvVar)
 	// Running `auth` can't fix a key from the environment, because the
 	// environment variable overrides the key file it writes.
 	envKeyHint = fmt.Sprintf(
-		"Create a key at %s and update %s in your MCP client's configuration, or remove it to use the key saved by `garmin-personal-mcp auth`.",
+		"Create a key at %s and update %s in your MCP client's configuration, or remove it to use the key saved by `garmin-mcp auth`.",
 		KeyPage, KeyEnvVar)
 )
 

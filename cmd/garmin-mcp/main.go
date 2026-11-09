@@ -1,5 +1,5 @@
-// Command garmin-personal-mcp serves the Garmin Connect Personal API to MCP
-// clients over stdio, or over streamable HTTP with --http.
+// Command garmin-mcp serves the Garmin Connect Personal API to MCP clients
+// over stdio, or over streamable HTTP with --http.
 package main
 
 import (
@@ -23,20 +23,20 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"golang.org/x/term"
 
-	"github.com/re3turn/garmin-personal-mcp/internal/garmin"
-	"github.com/re3turn/garmin-personal-mcp/internal/server"
+	"github.com/re3turn/garmin-mcp/internal/garmin"
+	"github.com/re3turn/garmin-mcp/internal/server"
 )
 
 // version is set by -ldflags "-X main.version=..." in release builds.
 var version = ""
 
 const usage = `Usage:
-  garmin-personal-mcp [serve]       serve over stdio (default)
-  garmin-personal-mcp [serve] --http [--host 127.0.0.1] [--port 8491] [--allowed-host NAME]...
-                                    serve streamable HTTP at /mcp (no authentication)
-  garmin-personal-mcp auth          save a Garmin Personal API key
-  garmin-personal-mcp auth --check  report whether the saved key works
-  garmin-personal-mcp --version
+  garmin-mcp [serve]       serve over stdio (default)
+  garmin-mcp [serve] --http [--host 127.0.0.1] [--port 8491] [--allowed-host NAME]...
+                           serve streamable HTTP at /mcp (no authentication)
+  garmin-mcp auth          save a Garmin Personal API key
+  garmin-mcp auth --check  report whether the saved key works
+  garmin-mcp --version
 `
 
 // hostList collects a flag that may be repeated.
@@ -56,7 +56,7 @@ func main() {
 }
 
 func run(args []string) int {
-	flags := flag.NewFlagSet("garmin-personal-mcp", flag.ContinueOnError)
+	flags := flag.NewFlagSet("garmin-mcp", flag.ContinueOnError)
 	flags.Usage = func() { fmt.Fprint(os.Stderr, usage) }
 	showVersion := flags.Bool("version", false, "print the version")
 	check := flags.Bool("check", false, "with auth: report whether the saved key works, without prompting")
@@ -241,7 +241,7 @@ func saveKey(ctx context.Context) int {
 		return 1
 	}
 	if key == "" {
-		fmt.Fprintln(os.Stderr, "No key entered; nothing saved. Run `garmin-personal-mcp auth` in a terminal, or pipe the key in on stdin.")
+		fmt.Fprintln(os.Stderr, "No key entered; nothing saved. Run `garmin-mcp auth` in a terminal, or pipe the key in on stdin.")
 		return 1
 	}
 	if _, err := garmin.NewClient(garmin.WithAPIKey(key)).ProfileSettings(ctx); err != nil {
@@ -280,7 +280,7 @@ func cancelledExitCode(ctx context.Context) int {
 }
 
 // readKey masks input at a terminal. Without one (a pipe, or a shell an agent
-// runs) it reads one line from stdin, e.g. `pbpaste | garmin-personal-mcp auth`.
+// runs) it reads one line from stdin, e.g. `pbpaste | garmin-mcp auth`.
 func readKey(ctx context.Context) (string, error) {
 	fd := int(os.Stdin.Fd())
 	if !term.IsTerminal(fd) {

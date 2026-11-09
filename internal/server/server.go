@@ -7,7 +7,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/re3turn/garmin-personal-mcp/internal/garmin"
+	"github.com/re3turn/garmin-mcp/internal/garmin"
 )
 
 const defaultSpanDays = 7
@@ -40,7 +40,7 @@ func NewRemote(client *garmin.Client, version string) *mcp.Server {
 }
 
 func (s *Server) mcpServer(version string) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "garmin-personal-mcp", Version: version}, nil)
+	server := mcp.NewServer(&mcp.Implementation{Name: "garmin-mcp", Version: version}, nil)
 	s.addTools(server)
 	return server
 }

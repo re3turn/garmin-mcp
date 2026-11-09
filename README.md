@@ -1,4 +1,4 @@
-# garmin-personal-mcp
+# garmin-mcp
 
 An MCP server that reads your own Garmin data (sleep, HRV, Body Battery, stress, heart rate, activities, and more)
 from any MCP client, including ChatGPT, using Garmin Connect's official
@@ -16,7 +16,7 @@ It is written in Go, runs on Linux, macOS, and Windows, and serves over stdio or
 Requires Go 1.27.3 or later.
 
 ```sh
-go install github.com/re3turn/garmin-personal-mcp/cmd/garmin-personal-mcp@latest
+go install github.com/re3turn/garmin-mcp/cmd/garmin-mcp@latest
 ```
 
 ## Authentication
@@ -27,11 +27,11 @@ go install github.com/re3turn/garmin-personal-mcp/cmd/garmin-personal-mcp@latest
 2. Save the key. The input shows as `*`; Esc or Ctrl-C cancels.
 
    ```sh
-   garmin-personal-mcp auth
+   garmin-mcp auth
    ```
 
-   Without a terminal, pipe the key in instead (e.g. `pbpaste | garmin-personal-mcp auth`).
-3. Run `garmin-personal-mcp auth --check` to confirm the saved key works.
+   Without a terminal, pipe the key in instead (e.g. `pbpaste | garmin-mcp auth`).
+3. Run `garmin-mcp auth --check` to confirm the saved key works.
 
 The key is checked with Garmin and then saved to `~/.config/garmin/connect-personal-api-key`
 (`%USERPROFILE%\.config\garmin\` on Windows). Bearer tokens are cached in
@@ -45,13 +45,13 @@ official Python client (`gc-personal`), so a key saved by either one works for b
 Claude Code:
 
 ```sh
-claude mcp add garmin -- garmin-personal-mcp
+claude mcp add garmin -- garmin-mcp
 ```
 
 Codex CLI:
 
 ```sh
-codex mcp add garmin -- garmin-personal-mcp
+codex mcp add garmin -- garmin-mcp
 ```
 
 This writes `~/.codex/config.toml`, which the Codex IDE extension and Codex in the ChatGPT desktop app share,
@@ -63,7 +63,7 @@ Claude Desktop, Cursor, and other clients that use the `mcpServers` format:
 {
   "mcpServers": {
     "garmin": {
-      "command": "garmin-personal-mcp"
+      "command": "garmin-mcp"
     }
   }
 }
@@ -82,13 +82,13 @@ You need a ChatGPT workspace that allows custom MCP servers (developer mode) and
 where you can create and use tunnels. See OpenAI's docs for the current plan and permission requirements; the
 steps below follow those docs as of October 2026 and haven't been run end to end against ChatGPT.
 
-1. Save your Garmin key with `garmin-personal-mcp auth` (see [Authentication](#authentication)).
+1. Save your Garmin key with `garmin-mcp auth` (see [Authentication](#authentication)).
 2. Create a tunnel in the OpenAI Platform tunnel settings and download `tunnel-client` from
    [openai/tunnel-client](https://github.com/openai/tunnel-client/releases).
 3. Start the server in HTTP mode and keep it running:
 
    ```sh
-   garmin-personal-mcp --http      # http://127.0.0.1:8491/mcp
+   garmin-mcp --http      # http://127.0.0.1:8491/mcp
    ```
 
 4. Point the tunnel at it:
@@ -112,8 +112,8 @@ steps below follow those docs as of October 2026 and haven't been run end to end
 ## Remote / HTTP mode
 
 ```sh
-garmin-personal-mcp --http                       # http://127.0.0.1:8491/mcp
-garmin-personal-mcp --http --port 8491 --allowed-host garmin.example.ts.net   # behind tailscale serve
+garmin-mcp --http                       # http://127.0.0.1:8491/mcp
+garmin-mcp --http --port 8491 --allowed-host garmin.example.ts.net   # behind tailscale serve
 ```
 
 This serves streamable HTTP at `/mcp` with every tool except `garmin_download_activity`, which saves a file on

@@ -1,4 +1,4 @@
-module github.com/re3turn/garmin-personal-mcp
+module github.com/re3turn/garmin-mcp
 
 go 1.27.3
 

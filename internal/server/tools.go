@@ -6,7 +6,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/re3turn/garmin-personal-mcp/internal/garmin"
+	"github.com/re3turn/garmin-mcp/internal/garmin"
 )
 
 const (

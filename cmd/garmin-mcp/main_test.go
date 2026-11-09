@@ -12,8 +12,8 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/re3turn/garmin-personal-mcp/internal/garmin"
-	"github.com/re3turn/garmin-personal-mcp/internal/server"
+	"github.com/re3turn/garmin-mcp/internal/garmin"
+	"github.com/re3turn/garmin-mcp/internal/server"
 )
 
 // Only arguments that exit before serving or prompting are exercised here.

@@ -1,0 +1,15 @@
+{
+  "avg": "null",
+  "endDate": "string",
+  "enduranceScoreDTO": "null",
+  "groupMap": {
+    "(key)": {
+      "enduranceContributorDTOList": [],
+      "groupAverage": "null",
+      "groupMax": "null"
+    }
+  },
+  "max": "null",
+  "startDate": "string",
+  "userProfilePK": "number"
+}

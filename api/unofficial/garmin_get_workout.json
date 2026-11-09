@@ -1,0 +1,193 @@
+{
+  "atpPlanId": "null",
+  "author": {
+    "displayName": "string",
+    "fullName": "string",
+    "profileImgNameLarge": "null",
+    "profileImgNameMedium": "string",
+    "profileImgNameSmall": "string",
+    "userPro": "boolean",
+    "userProfilePk": "number",
+    "vivokidUser": "boolean"
+  },
+  "avgTrainingSpeed": "number",
+  "consumer": "null",
+  "consumerImageURL": "null",
+  "consumerName": "null",
+  "consumerWebsiteURL": "null",
+  "createdDate": "string",
+  "description": "null",
+  "descriptionI18nKey": "null",
+  "estimateType": "string",
+  "estimatedDistanceInMeters": "number",
+  "estimatedDistanceUnit": {
+    "factor": "number",
+    "unitId": "number",
+    "unitKey": "string"
+  },
+  "estimatedDurationInSecs": "number",
+  "isSessionTransitionEnabled": "null",
+  "locale": "null",
+  "ownerId": "number",
+  "poolLength": "null",
+  "poolLengthUnit": "null",
+  "shared": "boolean",
+  "sharedWithUsers": "null",
+  "sportType": {
+    "displayOrder": "number",
+    "sportTypeId": "number",
+    "sportTypeKey": "string"
+  },
+  "subSportType": "null",
+  "trainingPlanId": "null",
+  "updatedDate": "string",
+  "uploadTimestamp": "null",
+  "workoutId": "number",
+  "workoutName": "string",
+  "workoutNameI18nKey": "null",
+  "workoutProvider": "null",
+  "workoutSegments": [
+    {
+      "avgTrainingSpeed": "null",
+      "description": "null",
+      "estimateType": "null",
+      "estimatedDistanceInMeters": "null",
+      "estimatedDistanceUnit": "null",
+      "estimatedDurationInSecs": "null",
+      "poolLength": "null",
+      "poolLengthUnit": "null",
+      "segmentOrder": "number",
+      "sportType": {
+        "displayOrder": "number",
+        "sportTypeId": "number",
+        "sportTypeKey": "string"
+      },
+      "workoutSteps": [
+        {
+          "category": "null",
+          "childStepId": "null|number",
+          "description": "null",
+          "endCondition": {
+            "conditionTypeId": "number",
+            "conditionTypeKey": "string",
+            "displayOrder": "number",
+            "displayable": "boolean"
+          },
+          "endConditionCompare": "null|string",
+          "endConditionValue": "number",
+          "endConditionZone": "null",
+          "equipmentType": {
+            "displayOrder": "number",
+            "equipmentTypeId": "number",
+            "equipmentTypeKey": "null"
+          },
+          "exerciseName": "null",
+          "numberOfIterations": "number",
+          "preferredEndConditionUnit": "null",
+          "providerExerciseSourceId": "null",
+          "secondaryTargetType": "null",
+          "secondaryTargetValueOne": "null",
+          "secondaryTargetValueTwo": "null",
+          "secondaryTargetValueUnit": "null",
+          "secondaryZoneNumber": "null",
+          "skipLastRestStep": "boolean",
+          "smartRepeat": "boolean",
+          "stepId": "number",
+          "stepOrder": "number",
+          "stepType": {
+            "displayOrder": "number",
+            "stepTypeId": "number",
+            "stepTypeKey": "string"
+          },
+          "strokeType": {
+            "displayOrder": "number",
+            "strokeTypeId": "number",
+            "strokeTypeKey": "null"
+          },
+          "targetType": {
+            "displayOrder": "number",
+            "workoutTargetTypeId": "number",
+            "workoutTargetTypeKey": "string"
+          },
+          "targetValueOne": "number",
+          "targetValueTwo": "number",
+          "targetValueUnit": "null",
+          "type": "string",
+          "weightUnit": {
+            "factor": "number",
+            "unitId": "number",
+            "unitKey": "string"
+          },
+          "weightValue": "number",
+          "workoutProvider": "null",
+          "workoutSteps": [
+            {
+              "category": "null",
+              "childStepId": "number",
+              "description": "null",
+              "endCondition": {
+                "conditionTypeId": "number",
+                "conditionTypeKey": "string",
+                "displayOrder": "number",
+                "displayable": "boolean"
+              },
+              "endConditionCompare": "string",
+              "endConditionValue": "number",
+              "endConditionZone": "null",
+              "equipmentType": {
+                "displayOrder": "number",
+                "equipmentTypeId": "number",
+                "equipmentTypeKey": "null"
+              },
+              "exerciseName": "null",
+              "preferredEndConditionUnit": {
+                "(nullable)": true,
+                "factor": "number",
+                "unitId": "number",
+                "unitKey": "string"
+              },
+              "providerExerciseSourceId": "null",
+              "secondaryTargetType": "null",
+              "secondaryTargetValueOne": "null",
+              "secondaryTargetValueTwo": "null",
+              "secondaryTargetValueUnit": "null",
+              "secondaryZoneNumber": "null",
+              "stepId": "number",
+              "stepOrder": "number",
+              "stepType": {
+                "displayOrder": "number",
+                "stepTypeId": "number",
+                "stepTypeKey": "string"
+              },
+              "strokeType": {
+                "displayOrder": "number",
+                "strokeTypeId": "number",
+                "strokeTypeKey": "null"
+              },
+              "targetType": {
+                "displayOrder": "number",
+                "workoutTargetTypeId": "number",
+                "workoutTargetTypeKey": "string"
+              },
+              "targetValueOne": "number",
+              "targetValueTwo": "number",
+              "targetValueUnit": "null",
+              "type": "string",
+              "weightUnit": {
+                "factor": "number",
+                "unitId": "number",
+                "unitKey": "string"
+              },
+              "weightValue": "number",
+              "workoutProvider": "null",
+              "zoneNumber": "null"
+            }
+          ],
+          "zoneNumber": "null"
+        }
+      ]
+    }
+  ],
+  "workoutSourceId": "null",
+  "workoutThumbnailUrl": "string"
+}

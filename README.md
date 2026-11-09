@@ -268,6 +268,14 @@ embeds it in a JavaScript bundle. To pull it out into `api/openapi.json`:
 go run ./tools/fetch-openapi/   # -o - prints it to stdout instead
 ```
 
+The unofficial API has no spec. [`api/unofficial/`](api/unofficial/) holds the shape of each response the
+`--unofficial` tools read, with every value replaced by its type, and how each tool relates to the Personal API. To
+record them again from your account after `auth --unofficial`:
+
+```sh
+go run ./tools/capture-unofficial/   # -date YYYY-MM-DD, default yesterday
+```
+
 ## License
 
 [MIT](LICENSE). Garmin and Garmin Connect are trademarks of Garmin Ltd. or its subsidiaries.

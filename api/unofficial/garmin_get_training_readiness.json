@@ -1,0 +1,33 @@
+[
+  {
+    "acuteLoad": "number",
+    "acwrFactorFeedback": "string",
+    "acwrFactorPercent": "number",
+    "calendarDate": "string",
+    "deviceId": "number",
+    "feedbackLong": "string",
+    "feedbackShort": "string",
+    "hrvFactorFeedback": "string",
+    "hrvFactorPercent": "number",
+    "hrvWeeklyAverage": "number",
+    "inputContext": "string",
+    "level": "string",
+    "primaryActivityTracker": "boolean",
+    "recoveryTime": "number",
+    "recoveryTimeChangePhrase": "null|string",
+    "recoveryTimeFactorFeedback": "string",
+    "recoveryTimeFactorPercent": "number",
+    "score": "number",
+    "sleepHistoryFactorFeedback": "string",
+    "sleepHistoryFactorPercent": "number",
+    "sleepScore": "null|number",
+    "sleepScoreFactorFeedback": "string",
+    "sleepScoreFactorPercent": "number",
+    "stressHistoryFactorFeedback": "string",
+    "stressHistoryFactorPercent": "number",
+    "timestamp": "string",
+    "timestampLocal": "string",
+    "userProfilePK": "number",
+    "validSleep": "boolean"
+  }
+]

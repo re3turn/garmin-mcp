@@ -1,0 +1,78 @@
+{
+  "searchFilter": {
+    "allowedPrivacyList": "null",
+    "limit": "number",
+    "locale": "null",
+    "ownerDisplayName": "null",
+    "ownerId": "number",
+    "planKey": "boolean",
+    "start": "number",
+    "trainingLevels": "null",
+    "trainingStatusList": [
+      "string"
+    ],
+    "trainingSubTypes": "null",
+    "trainingTypes": "null",
+    "trainingVersions": "null"
+  },
+  "trainingPlanList": [
+    {
+      "adaptivePlanPhases": "null",
+      "avgWeeklyWorkouts": "number",
+      "createDate": "string",
+      "daysInLastWeek": "null",
+      "description": "string",
+      "descriptionI18nKey": "string",
+      "durationInWeeks": "number",
+      "endDate": "string",
+      "expireDate": "null",
+      "formatLocale": {
+        "id": "number",
+        "isSupported": "boolean",
+        "key": "string"
+      },
+      "name": "string",
+      "nameI18nKey": "string",
+      "ownerDisplayName": "null",
+      "ownerId": "number",
+      "parentPlanId": "number",
+      "pausedDate": "null",
+      "planKey": "string",
+      "planPhases": "null",
+      "privacyRule": {
+        "typeId": "number",
+        "typeKey": "string"
+      },
+      "publishDate": "null",
+      "resumedDate": "null",
+      "seriesIndex": "null",
+      "startDate": "string",
+      "supplementalSports": [
+        "string"
+      ],
+      "taskList": "null",
+      "trainingLevel": {
+        "levelId": "number",
+        "levelKey": "string"
+      },
+      "trainingPlanCategory": "string",
+      "trainingPlanId": "number",
+      "trainingStatus": {
+        "statusId": "number",
+        "statusKey": "string"
+      },
+      "trainingSubType": {
+        "subTypeId": "number",
+        "subTypeKey": "string"
+      },
+      "trainingType": {
+        "typeId": "number",
+        "typeKey": "string"
+      },
+      "trainingVersion": {
+        "versionId": "number",
+        "versionName": "string"
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "endDate": "string",
+  "hillScoreDTOList": [],
+  "maxScore": "null",
+  "periodAvgScore": {
+    "(key)": "null"
+  },
+  "startDate": "string",
+  "userProfilePK": "number"
+}

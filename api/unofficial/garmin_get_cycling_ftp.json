@@ -1,0 +1,10 @@
+{
+  "biometricSourceType": "string",
+  "calendarDate": "string",
+  "functionalThresholdPower": "number",
+  "isStale": "boolean",
+  "sequence": "number",
+  "sport": "string",
+  "userProfilePK": "number",
+  "version": "number"
+}

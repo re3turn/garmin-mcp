@@ -1,0 +1,30 @@
+[
+  {
+    "associatedActivityDateTime": "null",
+    "associatedActivityId": "null",
+    "atpPlanId": "null",
+    "atpPlanTypeId": "null",
+    "estimateType": "null",
+    "estimatedDistanceInMeters": "null",
+    "estimatedDistanceUnit": "null",
+    "estimatedDurationInSecs": "number",
+    "fbtAdaptivePlanId": "number",
+    "isRestDay": "boolean",
+    "itpPlanId": "null",
+    "ownerId": "number",
+    "priority": "null",
+    "protected": "boolean",
+    "race": "boolean",
+    "scheduleDate": "string",
+    "scheduledWorkoutId": "null",
+    "selfGuidedPlanId": "null",
+    "tpPlanName": "string",
+    "tpType": "null",
+    "trainingPlanId": "number",
+    "workoutId": "null",
+    "workoutName": "string",
+    "workoutPhrase": "string",
+    "workoutType": "string",
+    "workoutUuid": "string"
+  }
+]

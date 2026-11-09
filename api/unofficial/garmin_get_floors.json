@@ -1,0 +1,17 @@
+{
+  "endTimestampGMT": "string",
+  "endTimestampLocal": "string",
+  "floorValuesArray": [
+    [
+      "number|string"
+    ]
+  ],
+  "floorsValueDescriptorDTOList": [
+    {
+      "index": "number",
+      "key": "string"
+    }
+  ],
+  "startTimestampGMT": "string",
+  "startTimestampLocal": "string"
+}

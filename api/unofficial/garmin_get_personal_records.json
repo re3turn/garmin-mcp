@@ -1,0 +1,21 @@
+[
+  {
+    "actStartDateTimeInGMTFormatted": "null|string",
+    "activityId": "number",
+    "activityName": "null|string",
+    "activityStartDateTimeInGMT": "null|number",
+    "activityStartDateTimeLocal": "null|number",
+    "activityStartDateTimeLocalFormatted": "null|string",
+    "activityType": "null|string",
+    "id": "number",
+    "poolLengthUnit": "null",
+    "prStartTimeGmt": "number",
+    "prStartTimeGmtFormatted": "string",
+    "prStartTimeLocal": "null|number",
+    "prStartTimeLocalFormatted": "null|string",
+    "prTypeLabelKey": "null",
+    "status": "string",
+    "typeId": "number",
+    "value": "number"
+  }
+]

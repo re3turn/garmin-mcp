@@ -1,0 +1,34 @@
+{
+  "avgStressLevel": "number",
+  "bodyBatteryValueDescriptorsDTOList": [
+    {
+      "bodyBatteryValueDescriptorIndex": "number",
+      "bodyBatteryValueDescriptorKey": "string"
+    }
+  ],
+  "bodyBatteryValuesArray": [
+    [
+      "number|string"
+    ]
+  ],
+  "calendarDate": "string",
+  "endTimestampGMT": "string",
+  "endTimestampLocal": "string",
+  "maxStressLevel": "number",
+  "startTimestampGMT": "string",
+  "startTimestampLocal": "string",
+  "stressChartValueOffset": "number",
+  "stressChartYAxisOrigin": "number",
+  "stressValueDescriptorsDTOList": [
+    {
+      "index": "number",
+      "key": "string"
+    }
+  ],
+  "stressValuesArray": [
+    [
+      "number"
+    ]
+  ],
+  "userProfilePK": "number"
+}

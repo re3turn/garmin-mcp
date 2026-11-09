@@ -1,0 +1,49 @@
+[
+  {
+    "atpPlanId": "null|number",
+    "author": {
+      "displayName": "null|string",
+      "fullName": "null|string",
+      "profileImgNameLarge": "null",
+      "profileImgNameMedium": "null|string",
+      "profileImgNameSmall": "null|string",
+      "userPro": "boolean",
+      "userProfilePk": "null|number",
+      "vivokidUser": "boolean"
+    },
+    "consumer": "null",
+    "createdDate": "string",
+    "description": "null|string",
+    "descriptionI18nKey": "null",
+    "estimateType": "null|string",
+    "estimated": "boolean",
+    "estimatedDistanceInMeters": "null|number",
+    "estimatedDistanceUnit": {
+      "factor": "null|number",
+      "unitId": "null|number",
+      "unitKey": "null|string"
+    },
+    "estimatedDurationInSecs": "null|number",
+    "ownerId": "number",
+    "poolLength": "number",
+    "poolLengthUnit": {
+      "factor": "null|number",
+      "unitId": "null|number",
+      "unitKey": "null|string"
+    },
+    "shared": "boolean",
+    "sportType": {
+      "displayOrder": "number",
+      "sportTypeId": "number",
+      "sportTypeKey": "string"
+    },
+    "trainingPlanId": "null",
+    "updateDate": "string",
+    "workoutId": "number",
+    "workoutName": "string",
+    "workoutNameI18nKey": "null",
+    "workoutProvider": "null",
+    "workoutSourceId": "null",
+    "workoutThumbnailUrl": "null|string"
+  }
+]

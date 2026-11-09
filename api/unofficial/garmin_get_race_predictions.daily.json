@@ -1,0 +1,12 @@
+[
+  {
+    "calendarDate": "string",
+    "fromCalendarDate": "string",
+    "time10K": "number",
+    "time5K": "number",
+    "timeHalfMarathon": "number",
+    "timeMarathon": "number",
+    "toCalendarDate": "string",
+    "userId": "number"
+  }
+]

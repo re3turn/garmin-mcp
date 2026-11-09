@@ -1,0 +1,44 @@
+{
+  "avgSleepRespirationValue": "number",
+  "avgTomorrowSleepRespirationValue": "number",
+  "avgWakingRespirationValue": "number",
+  "calendarDate": "string",
+  "endTimestampGMT": "string",
+  "endTimestampLocal": "string",
+  "highestRespirationValue": "number",
+  "lowestRespirationValue": "number",
+  "respirationAveragesValueDescriptorDTOList": [
+    {
+      "respirationAveragesValueDescriptionKey": "string",
+      "respirationAveragesValueDescriptorIndex": "number"
+    }
+  ],
+  "respirationAveragesValuesArray": [
+    [
+      "null|number"
+    ]
+  ],
+  "respirationValueDescriptorsDTOList": [
+    {
+      "index": "number",
+      "key": "string"
+    }
+  ],
+  "respirationValuesArray": [
+    [
+      "number"
+    ]
+  ],
+  "respirationVersion": "number",
+  "sleepEndTimestampGMT": "string",
+  "sleepEndTimestampLocal": "string",
+  "sleepStartTimestampGMT": "string",
+  "sleepStartTimestampLocal": "string",
+  "startTimestampGMT": "string",
+  "startTimestampLocal": "string",
+  "tomorrowSleepEndTimestampGMT": "string",
+  "tomorrowSleepEndTimestampLocal": "string",
+  "tomorrowSleepStartTimestampGMT": "string",
+  "tomorrowSleepStartTimestampLocal": "string",
+  "userProfilePK": "number"
+}

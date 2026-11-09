@@ -1,0 +1,22 @@
+[
+  {
+    "createDate": "string",
+    "customMakeModel": "string",
+    "dateBegin": "string",
+    "dateEnd": "null|string",
+    "displayName": "null|string",
+    "gearMakeName": "string",
+    "gearModelName": "string",
+    "gearPk": "number",
+    "gearStatusName": "string",
+    "gearTypeName": "string",
+    "imageNameLarge": "null",
+    "imageNameMedium": "null",
+    "imageNameSmall": "null",
+    "maximumMeters": "number",
+    "notified": "boolean",
+    "updateDate": "string",
+    "userProfilePk": "number",
+    "uuid": "string"
+  }
+]

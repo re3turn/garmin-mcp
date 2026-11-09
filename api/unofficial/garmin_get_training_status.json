@@ -1,0 +1,88 @@
+{
+  "heatAltitudeAcclimationDTO": "null",
+  "mostRecentTrainingLoadBalance": {
+    "metricsTrainingLoadBalanceDTOMap": {
+      "(key)": {
+        "calendarDate": "string",
+        "deviceId": "number",
+        "monthlyLoadAerobicHigh": "number",
+        "monthlyLoadAerobicHighTargetMax": "number",
+        "monthlyLoadAerobicHighTargetMin": "number",
+        "monthlyLoadAerobicLow": "number",
+        "monthlyLoadAerobicLowTargetMax": "number",
+        "monthlyLoadAerobicLowTargetMin": "number",
+        "monthlyLoadAnaerobic": "number",
+        "monthlyLoadAnaerobicTargetMax": "number",
+        "monthlyLoadAnaerobicTargetMin": "number",
+        "primaryTrainingDevice": "boolean",
+        "trainingBalanceFeedbackPhrase": "string"
+      }
+    },
+    "recordedDevices": [
+      {
+        "category": "number",
+        "deviceId": "number",
+        "deviceName": "string",
+        "imageURL": "string"
+      }
+    ],
+    "userId": "number"
+  },
+  "mostRecentTrainingStatus": {
+    "lastPrimarySyncDate": "string",
+    "latestTrainingStatusData": {
+      "(key)": {
+        "acuteTrainingLoadDTO": {
+          "acwrPercent": "number",
+          "acwrStatus": "string",
+          "acwrStatusFeedback": "string",
+          "dailyAcuteChronicWorkloadRatio": "number",
+          "dailyTrainingLoadAcute": "number",
+          "dailyTrainingLoadChronic": "number",
+          "maxTrainingLoadChronic": "number",
+          "minTrainingLoadChronic": "number"
+        },
+        "calendarDate": "string",
+        "deviceId": "number",
+        "fitnessTrend": "number",
+        "fitnessTrendSport": "string",
+        "loadLevelTrend": "null",
+        "loadTunnelMax": "null",
+        "loadTunnelMin": "null",
+        "primaryTrainingDevice": "boolean",
+        "sinceDate": "string",
+        "sport": "string",
+        "subSport": "string",
+        "timestamp": "number",
+        "trainingPaused": "boolean",
+        "trainingStatus": "number",
+        "trainingStatusFeedbackPhrase": "string",
+        "weeklyTrainingLoad": "null"
+      }
+    },
+    "recordedDevices": [
+      {
+        "category": "number",
+        "deviceId": "number",
+        "deviceName": "string",
+        "imageURL": "string"
+      }
+    ],
+    "showSelector": "boolean",
+    "userId": "number"
+  },
+  "mostRecentVO2Max": {
+    "cycling": "null",
+    "generic": {
+      "calendarDate": "string",
+      "fitnessAge": "null",
+      "fitnessAgeDescription": "null",
+      "maxMetCategory": "number",
+      "vo2MaxPreciseValue": "number",
+      "vo2MaxValue": "number"
+    },
+    "heatAltitudeAcclimation": "null",
+    "userId": "number"
+  },
+  "userId": "number"
+}

@@ -1,0 +1,10 @@
+{
+  "calendarDate": "string",
+  "fromCalendarDate": "null",
+  "time10K": "number",
+  "time5K": "number",
+  "timeHalfMarathon": "number",
+  "timeMarathon": "number",
+  "toCalendarDate": "null",
+  "userId": "number"
+}

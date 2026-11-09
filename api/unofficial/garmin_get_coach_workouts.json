@@ -1,0 +1,52 @@
+{
+  "trainingPlanWorkoutScheduleDTOS": [
+    {
+      "planName": "string",
+      "trainingPlanClassification": "string",
+      "trainingPlanDetailsDTO": {
+        "athletePlanId": "number",
+        "athleteRace": {
+          "raceDay": "string",
+          "raceName": "null",
+          "raceUrl": "null"
+        },
+        "planCompleted": "boolean",
+        "planKey": "string",
+        "registrationDate": "string",
+        "trainingType": "string",
+        "workoutsPerWeek": "number"
+      },
+      "trainingPlanId": "number",
+      "workoutScheduleSummaries": [
+        {
+          "associatedActivityDateTime": "null",
+          "associatedActivityId": "null",
+          "atpPlanId": "null",
+          "atpPlanTypeId": "null",
+          "estimateType": "null",
+          "estimatedDistanceInMeters": "null",
+          "estimatedDistanceUnit": "null",
+          "estimatedDurationInSecs": "null|number",
+          "fbtAdaptivePlanId": "number",
+          "isRestDay": "boolean",
+          "itpPlanId": "null",
+          "ownerId": "number",
+          "priority": "null",
+          "protected": "boolean",
+          "race": "boolean",
+          "scheduleDate": "string",
+          "scheduledWorkoutId": "null",
+          "selfGuidedPlanId": "null",
+          "tpPlanName": "string",
+          "tpType": "null",
+          "trainingPlanId": "number",
+          "workoutId": "null",
+          "workoutName": "null|string",
+          "workoutPhrase": "string",
+          "workoutType": "null|string",
+          "workoutUuid": "string"
+        }
+      ]
+    }
+  ]
+}

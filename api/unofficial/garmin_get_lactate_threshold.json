@@ -1,0 +1,13 @@
+[
+  {
+    "calendarDate": "string",
+    "hearRate": "null|number",
+    "heartRateCycling": "null",
+    "heartRateRowing": "null",
+    "rowSpeed": "null",
+    "sequence": "number",
+    "speed": "null|number",
+    "userProfilePK": "number",
+    "version": "number"
+  }
+]

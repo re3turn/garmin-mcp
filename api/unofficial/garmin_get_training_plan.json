@@ -1,0 +1,72 @@
+{
+  "adaptivePlanPhases": [
+    {
+      "currentPhase": "boolean",
+      "endDate": "string",
+      "startDate": "string",
+      "trainingPhase": "string"
+    }
+  ],
+  "avgWeeklyWorkouts": "number",
+  "createDate": "string",
+  "daysInLastWeek": "null",
+  "description": "string",
+  "descriptionI18nKey": "string",
+  "durationInWeeks": "number",
+  "endDate": "string",
+  "expireDate": "null",
+  "formatLocale": {
+    "id": "number",
+    "isSupported": "boolean",
+    "key": "string"
+  },
+  "name": "string",
+  "nameI18nKey": "string",
+  "ownerDisplayName": "null",
+  "ownerId": "number",
+  "parentPlanId": "number",
+  "pausedDate": "null",
+  "planKey": "string",
+  "planPhases": [
+    {
+      "currentPhase": "boolean",
+      "endDate": "string",
+      "startDate": "string",
+      "trainingPhase": "string"
+    }
+  ],
+  "privacyRule": {
+    "typeId": "number",
+    "typeKey": "string"
+  },
+  "publishDate": "null",
+  "resumedDate": "null",
+  "seriesIndex": "null",
+  "startDate": "string",
+  "supplementalSports": [
+    "string"
+  ],
+  "taskList": [],
+  "trainingLevel": {
+    "levelId": "number",
+    "levelKey": "string"
+  },
+  "trainingPlanCategory": "string",
+  "trainingPlanId": "number",
+  "trainingStatus": {
+    "statusId": "number",
+    "statusKey": "string"
+  },
+  "trainingSubType": {
+    "subTypeId": "number",
+    "subTypeKey": "string"
+  },
+  "trainingType": {
+    "typeId": "number",
+    "typeKey": "string"
+  },
+  "trainingVersion": {
+    "versionId": "number",
+    "versionName": "string"
+  }
+}

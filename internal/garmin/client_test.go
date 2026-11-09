@@ -63,6 +63,7 @@ func assertPrivate(t *testing.T, path string) {
 }
 
 type fakeGarmin struct {
+	t         *testing.T
 	exchanges atomic.Int32
 	gets      atomic.Int32
 	server    *httptest.Server
@@ -72,7 +73,7 @@ type fakeGarmin struct {
 // handle with the bearer token they carried.
 func newFakeGarmin(t *testing.T, handle func(w http.ResponseWriter, r *http.Request, token string)) *fakeGarmin {
 	t.Helper()
-	f := &fakeGarmin{}
+	f := &fakeGarmin{t: t}
 	f.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == tokenPath {
 			if r.Method != http.MethodPost || r.Header.Get("Authorization") != "ApiKey test-key" {
@@ -92,8 +93,14 @@ func newFakeGarmin(t *testing.T, handle func(w http.ResponseWriter, r *http.Requ
 	return f
 }
 
+// client waits, before the test's temp home is removed, for any token exchange
+// a cancelled caller left running, so its cache write can't race the removal.
+// Cleanups run last-registered first, so this runs before the server closes
+// and before the temp dir from isolate is removed.
 func (f *fakeGarmin) client() *Client {
-	return NewClient(WithBaseURL(f.server.URL), WithClock(func() time.Time { return testNow }))
+	c := NewClient(WithBaseURL(f.server.URL), WithClock(func() time.Time { return testNow }))
+	f.t.Cleanup(c.auth.waitForExchanges)
+	return c
 }
 
 func TestGetDecodesJSONAndKeepsLargeIDs(t *testing.T) {

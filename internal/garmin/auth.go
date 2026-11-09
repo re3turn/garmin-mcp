@@ -160,9 +160,16 @@ type Authenticator struct {
 	apiKey string
 
 	exchanges singleflight.Group
-	mu        sync.Mutex
-	token     cachedToken
+	// inflight counts exchanges a caller may have stopped waiting for; they
+	// still finish and write the cache file.
+	inflight sync.WaitGroup
+	mu       sync.Mutex
+	token    cachedToken
 }
+
+// waitForExchanges returns once every exchange started so far has finished,
+// cache write included. Tests call it before their temp home is removed.
+func (a *Authenticator) waitForExchanges() { a.inflight.Wait() }
 
 func (a *Authenticator) key() (key string, fromEnv bool, err error) {
 	if a.apiKey != "" {
@@ -192,7 +199,10 @@ func (a *Authenticator) Token(ctx context.Context, stale string) (string, error)
 	// Concurrent callers (garmin_get_day's sections) share one exchange, and a
 	// failure fails them all at once instead of each retrying in turn. The key
 	// includes stale so no caller gets back the token it reported rejected.
-	result := a.exchanges.DoChan(fingerprint+"\x00"+stale, func() (any, error) {
+	// Counted before DoChan, which may not have started the exchange when a
+	// cancelled caller returns.
+	a.inflight.Add(1)
+	shared := a.exchanges.DoChan(fingerprint+"\x00"+stale, func() (any, error) {
 		if token, ok := a.cached(fingerprint, stale); ok {
 			return token, nil
 		}
@@ -206,6 +216,12 @@ func (a *Authenticator) Token(ctx context.Context, stale string) (string, error)
 		a.store(cachedToken{Fingerprint: fingerprint, AccessToken: token, ExpiresAt: expiresAt})
 		return token, nil
 	})
+	// The exchange, store included, has returned once its result arrives.
+	result := make(chan singleflight.Result, 1)
+	go func() {
+		defer a.inflight.Done()
+		result <- <-shared
+	}()
 	select {
 	case <-ctx.Done():
 		return "", ctx.Err()

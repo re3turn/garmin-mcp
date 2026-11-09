@@ -208,6 +208,10 @@ instead of a Personal API key. Without `--unofficial`, none of this is used.
 The tokens Garmin returns are saved to `~/.config/garmin/connect-unofficial-tokens.enc`, encrypted like the
 Personal API key (see [Authentication](#authentication)), and renewed automatically. They give full access to your Garmin account.
 When Garmin refuses to renew them, run `auth --unofficial` again.
+Garmin issues the renewal token for 30 days and replaces it at each renewal, which happens when an unofficial
+tool runs once the access token (about a day) is close to expiring. Leaving these tools unused for 30 days, even with the
+server running, therefore means signing in again. These lifetimes are what Garmin returned in November 2026, not
+documented values, and Garmin can also revoke the sign-in before then.
 
 Garmin often blocks sign-ins from clients that aren't a browser, because Go can't present a browser's TLS
 fingerprint. If every attempt is blocked, try again later or from another network.

@@ -122,6 +122,9 @@ func (s *Server) addTools(server *mcp.Server) {
 	s.addBodyTools(server)
 	s.addActivityTools(server)
 	s.addProfileTools(server)
+	if s.connect != nil {
+		s.addUnofficialTools(server)
+	}
 }
 
 func (s *Server) addSummaryTools(server *mcp.Server) {

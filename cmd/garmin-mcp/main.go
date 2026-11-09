@@ -1,5 +1,6 @@
-// Command garmin-mcp serves the Garmin Connect Personal API to MCP clients
-// over stdio, or over streamable HTTP with --http.
+// Command garmin-mcp serves Garmin Connect data to MCP clients over stdio, or
+// over streamable HTTP with --http. It reads the Personal API, and with
+// --unofficial also the unofficial Garmin Connect API for what that lacks.
 package main
 
 import (
@@ -37,6 +38,13 @@ const usage = `Usage:
   garmin-mcp auth          save a Garmin Personal API key
   garmin-mcp auth --check  report whether the saved key works
   garmin-mcp --version
+
+Unofficial Garmin Connect API (data the Personal API doesn't have; can break without notice):
+  garmin-mcp auth --unofficial          sign in with your Garmin email and password
+  garmin-mcp auth --unofficial --check  report whether the saved sign-in works
+  garmin-mcp [serve] --unofficial       also serve the unofficial API's tools
+  garmin-mcp [serve] --http --unofficial --allow-unofficial-over-http
+                           the same over HTTP, which has no authentication
 `
 
 // hostList collects a flag that may be repeated.
@@ -65,6 +73,8 @@ func run(args []string) int {
 	port := flags.Int("port", 8491, "with --http: port to listen on")
 	var allowedHosts hostList
 	flags.Var(&allowedHosts, "allowed-host", "with --http: another Host header to accept, such as a reverse proxy's hostname (repeatable)")
+	unofficial := flags.Bool("unofficial", false, "with serve: add the unofficial Garmin Connect API's tools; with auth: sign in to it")
+	unofficialOverHTTP := flags.Bool("allow-unofficial-over-http", false, "with --http --unofficial: serve the unofficial tools over HTTP anyway")
 	positional, err := parseInterspersed(flags, args)
 	if err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -113,14 +123,41 @@ func run(args []string) int {
 			return 2
 		}
 	}
+	if *unofficialOverHTTP && (!*useHTTP || !*unofficial) {
+		fmt.Fprintf(os.Stderr, "--allow-unofficial-over-http needs --http and --unofficial\n\n%s", usage)
+		return 2
+	}
+	// The Connect tokens give full access to the account, unlike a read-only
+	// Personal API key, so serving them where anyone who reaches the port can
+	// use them takes a second, explicit flag.
+	if *useHTTP && *unofficial && !*unofficialOverHTTP {
+		fmt.Fprintln(os.Stderr, "--unofficial over --http serves tools backed by your Garmin account sign-in to anyone who "+
+			"can reach the port, since HTTP mode has no authentication. Add --allow-unofficial-over-http if that is what you want.")
+		return 2
+	}
 	switch command {
 	case "", "serve":
-		if *useHTTP {
-			return serveHTTP(ctx, net.JoinHostPort(*host, strconv.Itoa(*port)), allowedHosts)
+		var opts []server.Option
+		if *unofficial {
+			connect, err := garmin.NewConnectClient()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				return 2
+			}
+			opts = append(opts, server.WithUnofficial(connect))
+			warnIfNotSignedIn()
 		}
-		return serve(ctx)
+		if *useHTTP {
+			return serveHTTP(ctx, net.JoinHostPort(*host, strconv.Itoa(*port)), allowedHosts, opts...)
+		}
+		return serve(ctx, opts...)
 	case "auth":
-		if *check {
+		switch {
+		case *unofficial && *check:
+			return checkUnofficial(ctx)
+		case *unofficial:
+			return signIn(ctx)
+		case *check:
 			return checkKey(ctx)
 		}
 		return saveKey(ctx)
@@ -164,8 +201,8 @@ func buildVersion() string {
 	return "dev"
 }
 
-func serve(ctx context.Context) int {
-	err := server.New(garmin.NewClient(), buildVersion()).Run(ctx, &mcp.StdioTransport{})
+func serve(ctx context.Context, opts ...server.Option) int {
+	err := server.New(garmin.NewClient(), buildVersion(), opts...).Run(ctx, &mcp.StdioTransport{})
 	if err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("server stopped", "error", err)
 		return 1
@@ -176,7 +213,7 @@ func serve(ctx context.Context) int {
 // shutdownGrace is how long in-flight tool calls get after Ctrl-C or SIGTERM.
 const shutdownGrace = 5 * time.Second
 
-func serveHTTP(ctx context.Context, addr string, allowedHosts []string) int {
+func serveHTTP(ctx context.Context, addr string, allowedHosts []string, opts ...server.Option) int {
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Couldn't listen on %s: %v\n", addr, err)
@@ -184,7 +221,7 @@ func serveHTTP(ctx context.Context, addr string, allowedHosts []string) int {
 	}
 	fmt.Fprintf(os.Stderr, "Serving MCP over streamable HTTP at http://%s%s (no authentication; keep it off the public internet)\n",
 		listener.Addr(), server.MCPPath)
-	if err := runHTTP(ctx, listener, server.NewRemote(garmin.NewClient(), buildVersion()), allowedHosts, shutdownGrace); err != nil {
+	if err := runHTTP(ctx, listener, server.NewRemote(garmin.NewClient(), buildVersion(), opts...), allowedHosts, shutdownGrace); err != nil {
 		slog.Error("server stopped", "error", err)
 		return 1
 	}

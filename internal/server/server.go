@@ -25,17 +25,34 @@ type Server struct {
 	// remote leaves out tools that write on the server's machine: the file
 	// wouldn't reach a remote caller, and HTTP has no authentication to gate it.
 	remote bool
+	// connect, when set, adds the tools that read the unofficial Garmin
+	// Connect API.
+	connect *garmin.ConnectClient
+}
+
+type Option func(*Server)
+
+// WithUnofficial adds the tools that read the unofficial Garmin Connect API
+// for the data the Personal API doesn't have.
+func WithUnofficial(connect *garmin.ConnectClient) Option {
+	return func(s *Server) { s.connect = connect }
 }
 
 // New serves every tool, for a local client over stdio.
-func New(client *garmin.Client, version string) *mcp.Server {
+func New(client *garmin.Client, version string, opts ...Option) *mcp.Server {
 	s := &Server{client: client, today: time.Now}
+	for _, opt := range opts {
+		opt(s)
+	}
 	return s.mcpServer(version)
 }
 
 // NewRemote serves only the tools that read from Garmin, for --http.
-func NewRemote(client *garmin.Client, version string) *mcp.Server {
+func NewRemote(client *garmin.Client, version string, opts ...Option) *mcp.Server {
 	s := &Server{client: client, today: time.Now, remote: true}
+	for _, opt := range opts {
+		opt(s)
+	}
 	return s.mcpServer(version)
 }
 

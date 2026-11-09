@@ -20,6 +20,16 @@ var (
 // nothing, so a paste looks lost, and leaves Ctrl-C to the signal handler,
 // which can't stop the read before Enter.
 func readSecret(ctx context.Context, fd int) (string, error) {
+	return readTerminalLine(ctx, fd, true)
+}
+
+// readVisible is readSecret for input that isn't secret, such as an email or a
+// one-time code, so Esc and Ctrl-C cancel it the same way.
+func readVisible(ctx context.Context, fd int) (string, error) {
+	return readTerminalLine(ctx, fd, false)
+}
+
+func readTerminalLine(ctx context.Context, fd int, masked bool) (string, error) {
 	state, err := term.MakeRaw(fd)
 	if err != nil {
 		return "", err
@@ -31,7 +41,7 @@ func readSecret(ctx context.Context, fd int) (string, error) {
 	}
 	read := make(chan result, 1)
 	go func() {
-		line, err := readMasked(os.Stdin, os.Stderr)
+		line, err := readTyped(os.Stdin, os.Stderr, masked)
 		read <- result{line, err}
 	}()
 	select {
@@ -47,6 +57,12 @@ func readSecret(ctx context.Context, fd int) (string, error) {
 
 // readMasked echoes * for each character so the user sees the key arrive.
 func readMasked(in io.Reader, out io.Writer) (string, error) {
+	return readTyped(in, out, true)
+}
+
+// readTyped echoes * for each character when masked, and the character itself
+// otherwise.
+func readTyped(in io.Reader, out io.Writer, masked bool) (string, error) {
 	var line []byte
 	buf := make([]byte, 256)
 	for {
@@ -77,7 +93,11 @@ func readMasked(in io.Reader, out io.Writer) (string, error) {
 				line = line[:0]
 			case b >= 0x20:
 				line = append(line, b)
-				fmt.Fprint(out, "*")
+				if masked {
+					fmt.Fprint(out, "*")
+				} else {
+					out.Write([]byte{b})
+				}
 			}
 		}
 		if errors.Is(err, io.EOF) {

@@ -6,6 +6,7 @@ from any MCP client, including ChatGPT, using Garmin Connect's official
 It is written in Go, runs on Linux, macOS, and Windows, and serves over stdio or streamable HTTP.
 
 - No password: a Personal API key you create in Garmin Connect is exchanged for bearer tokens that last 24 hours
+  (only the opt-in [unofficial API](#unofficial-garmin-connect-api-optional) needs a sign-in)
 - Read-only: the Personal API can't change anything in your Garmin account
 - Any date range: ranges longer than an endpoint allows (28 days for steps and stress; 31 days for sleep,
   hydration, and Body Battery; a year for daily summaries) are split into several requests
@@ -168,6 +169,73 @@ Weights are in grams, distances in meters, and durations in seconds, as Garmin r
 `/weight-service/weight/all` from the Swagger reference has no tool, because the reference implementation reports
 that it returns HTTP 400 for every range. `garmin_get_weight` with `include_all` returns the same entries.
 
+## Unofficial Garmin Connect API (optional)
+
+Training readiness, training plans, and some other data aren't in the Personal API. With `--unofficial`, the
+server also reads them from the Garmin Connect API that Garmin's own apps use, following
+[python-garminconnect](https://github.com/cyberjunky/python-garminconnect) and
+[tamcore/garmin-mcp](https://github.com/tamcore/garmin-mcp). Data the Personal API has is still read through the
+Personal API, so these tools only add what it lacks.
+
+**This API is unofficial.** Garmin publishes nothing about it and can change or block it at any time, and using it
+may conflict with Garmin's terms of service. That's your decision to make. It also needs your Garmin password
+instead of a Personal API key. Without `--unofficial`, none of this is used.
+
+1. Sign in at a terminal. The password input shows as `*`, and an MFA code is asked for when your account uses
+   one. The password goes to Garmin only and is never saved. The sign-in pauses a few seconds between steps, as
+   a browser does, so it can take up to half a minute.
+
+   ```sh
+   garmin-mcp auth --unofficial
+   garmin-mcp auth --unofficial --check   # confirm the saved sign-in works
+   ```
+
+2. Add `--unofficial` to the server's arguments, e.g. `claude mcp add garmin -- garmin-mcp --unofficial`.
+   If there is no saved sign-in, the server says so on stderr when it starts and serves the other tools as usual;
+   signing in while it runs takes effect without a restart.
+
+The tokens Garmin returns are saved to `~/.config/garmin/connect-unofficial-tokens.json` with owner-only
+permissions and renewed automatically. They give full access to your Garmin account, so keep that file private.
+When Garmin refuses to renew them, run `auth --unofficial` again.
+
+Garmin often blocks sign-ins from clients that aren't a browser. python-garminconnect gets past more of these
+blocks by imitating a browser's TLS fingerprint, which this Go client can't. If every attempt is blocked, sign in
+with python-garminconnect and copy its `~/.garminconnect/garmin_tokens.json` to the path above; the file format is
+the same. Don't keep using both tools with the same file: each renewal replaces the refresh token, and the other
+tool's copy then stops working.
+
+HTTP mode leaves these tools out unless you also pass `--allow-unofficial-over-http`, because anyone who can reach
+the port can use your account's sign-in through them.
+
+| Tool | What it returns |
+| --- | --- |
+| `garmin_get_training_readiness` | Training readiness score and the factors behind it for a day |
+| `garmin_get_training_status` | Training status, training load, and VO2 max as of a day |
+| `garmin_get_vo2max` | Daily VO2 max estimates across a range |
+| `garmin_get_race_predictions` | Predicted 5K to marathon times: latest, or daily or monthly across a range |
+| `garmin_get_endurance_score` | Endurance score across a range, daily or weekly |
+| `garmin_get_hill_score` | Daily hill score across a range |
+| `garmin_get_running_tolerance` | Running tolerance across a range, daily or weekly |
+| `garmin_get_lactate_threshold` | Latest lactate threshold heart rate and speed |
+| `garmin_get_cycling_ftp` | Latest cycling FTP |
+| `garmin_get_personal_records` | Personal records across sports |
+| `garmin_get_respiration` | Respiration rate through a day |
+| `garmin_get_stress_timeline` | Stress level through a day (`garmin_get_stress` has daily totals) |
+| `garmin_get_floors` | Floors climbed and descended through a day |
+| `garmin_get_blood_pressure` | Blood pressure measurements across a range |
+| `garmin_get_active_training_plans` | Training plans active on a day |
+| `garmin_get_training_plan` | One training plan's phases and workouts |
+| `garmin_get_coach_workouts` | Garmin Coach and training plan workouts around a day, usually the current week |
+| `garmin_get_scheduled_workouts` | Workouts on the calendar across a range |
+| `garmin_get_calendar_month` | One month of the Garmin Connect calendar: workouts, plan days, races, and activities |
+| `garmin_list_workouts` | Workouts in the workout library |
+| `garmin_get_workout` | One workout's steps and targets |
+| `garmin_get_devices` | Devices registered to the account |
+| `garmin_get_gear` | Gear such as shoes and bikes |
+
+All of them only read. GETs that change the account, such as the one that adds a training plan to the calendar,
+are left out.
+
 ## Environment variables
 
 | Variable | Purpose | Default |
@@ -175,6 +243,7 @@ that it returns HTTP 400 for every range. `garmin_get_weight` with `include_all`
 | `GARMIN_PERSONAL_API_KEY` | Personal API key; takes precedence over the key file | – |
 | `GARMIN_MCP_DOWNLOAD_DIR` | Where `garmin_download_activity` saves files; nothing is written outside it. Must be an absolute path or start with `~/`, which expands to your home directory | `~/Downloads/garmin` |
 | `GARMIN_PERSONAL_API_BASE_URL` | API base URL (`https://personal.connectapi.garmin.cn` for the China region) | `https://personal.connectapi.garmin.com` |
+| `GARMIN_CONNECT_DOMAIN` | With `--unofficial`: the Garmin region, `garmin.com` or `garmin.cn`; nothing else is accepted, since the sign-in sends your password there | `garmin.com` |
 
 ## Development
 

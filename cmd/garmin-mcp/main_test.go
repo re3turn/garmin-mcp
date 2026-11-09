@@ -34,10 +34,26 @@ func TestExitCodes(t *testing.T) {
 		{[]string{"auth", "--http"}, 2},
 		{[]string{"--http", "--allowed-host", "https://proxy.example"}, 2},
 		{[]string{"--http", "--allowed-host", "--", "serve"}, 2},
+		{[]string{"--http", "--unofficial"}, 2},
+		{[]string{"--allow-unofficial-over-http"}, 2},
+		{[]string{"--unofficial", "--allow-unofficial-over-http"}, 2},
+		{[]string{"--http", "--allow-unofficial-over-http"}, 2},
+		{[]string{"auth", "--unofficial", "--http"}, 2},
 	}
 	for _, tc := range cases {
 		if got := run(tc.args); got != tc.want {
 			t.Errorf("run(%q) = %d, want %d", tc.args, got, tc.want)
+		}
+	}
+}
+
+// An unknown region fails before serving, so a password is never sent to a
+// host the user didn't mean.
+func TestUnknownConnectDomainIsRefused(t *testing.T) {
+	t.Setenv(garmin.ConnectDomainEnvVar, "garmin.example")
+	for _, args := range [][]string{{"--unofficial"}, {"auth", "--unofficial", "--check"}} {
+		if got := run(args); got != 2 {
+			t.Errorf("run(%q) = %d, want 2", args, got)
 		}
 	}
 }

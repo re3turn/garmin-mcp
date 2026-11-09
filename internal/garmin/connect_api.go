@@ -42,7 +42,7 @@ func (c *ConnectClient) RacePredictions(ctx context.Context, start, end *time.Ti
 	if start == nil || end == nil {
 		return c.Get(ctx, "/metrics-service/metrics/racepredictions/latest/"+name, nil)
 	}
-	if end.Sub(*start) > raceRangeMaxDays*24*time.Hour {
+	if end.After(start.AddDate(0, 0, raceRangeMaxDays)) {
 		return nil, fmt.Errorf("race predictions cover at most %d days per request", raceRangeMaxDays)
 	}
 	return c.Get(ctx, "/metrics-service/metrics/racepredictions/"+aggregation+"/"+name,

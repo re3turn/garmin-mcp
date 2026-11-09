@@ -41,13 +41,13 @@ type connectTokens struct {
 	ClientID     string `json:"di_client_id"`
 }
 
-// ConnectTokenFile is where `auth --unofficial` saves the sign-in.
+// ConnectTokenFile is where `auth --unofficial` saves the sign-in, sealed.
 func ConnectTokenFile() (string, error) {
 	dir, err := configDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "connect-unofficial-tokens.json"), nil
+	return filepath.Join(dir, "connect-unofficial-tokens.enc"), nil
 }
 
 func readConnectTokens() (connectTokens, error) {
@@ -55,10 +55,16 @@ func readConnectTokens() (connectTokens, error) {
 	if err != nil {
 		return connectTokens{}, err
 	}
-	data, err := os.ReadFile(path)
+	data, err := readSealed(path, sealedConnectSignIn)
 	if errors.Is(err, os.ErrNotExist) {
 		return connectTokens{}, &connectLoginError{fmt.Sprintf(
 			"Not signed in to Garmin Connect for the unofficial API. Run `%s` in a terminal.", connectLoginCommand)}
+	}
+	if errors.Is(err, errUnsealable) {
+		return connectTokens{}, &connectLoginError{fmt.Sprintf(
+			"The Garmin Connect token file %s can't be decrypted: it is damaged, or its encryption key in %s is gone. "+
+				"Run `%s` in a terminal.",
+			path, keys.where(), connectLoginCommand)}
 	}
 	if err != nil {
 		return connectTokens{}, err
@@ -88,7 +94,13 @@ func saveConnectTokens(tokens connectTokens) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return path, writePrivateFile(path, data)
+	return path, writeSealed(path, sealedConnectSignIn, data)
+}
+
+// SaveConnectSignIn saves tokens obtained outside `auth --unofficial`, sealed
+// like any sign-in. Tests in other packages set up a sign-in with it.
+func SaveConnectSignIn(accessToken, refreshToken, clientID string) (string, error) {
+	return saveConnectTokens(connectTokens{AccessToken: accessToken, RefreshToken: refreshToken, ClientID: clientID})
 }
 
 // connectAuth keeps a DI access token fresh. One mutex serializes every refresh

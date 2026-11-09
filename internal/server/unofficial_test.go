@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -31,15 +29,7 @@ func connectUnofficial(t *testing.T, remote bool, handle func(w http.ResponseWri
 	t.Setenv(garmin.KeyEnvVar, "test-key")
 
 	payload := base64.RawURLEncoding.EncodeToString(fmt.Appendf(nil, `{"exp":%d}`, time.Now().Add(24*time.Hour).Unix()))
-	path, err := garmin.ConnectTokenFile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	tokens := fmt.Sprintf(`{"di_token":"h.%s.s","di_refresh_token":"r","di_client_id":"c"}`, payload)
-	if err := os.WriteFile(path, []byte(tokens), 0o600); err != nil {
+	if _, err := garmin.SaveConnectSignIn("h."+payload+".s", "r", "c"); err != nil {
 		t.Fatal(err)
 	}
 

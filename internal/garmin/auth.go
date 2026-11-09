@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -77,7 +78,7 @@ func keyFile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "connect-personal-api-key"), nil
+	return filepath.Join(dir, "connect-personal-api-key.enc"), nil
 }
 
 func tokenCacheFile() (string, error) {
@@ -85,7 +86,7 @@ func tokenCacheFile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "connect-personal-api-bearer-token.json"), nil
+	return filepath.Join(dir, "connect-personal-api-bearer-token.enc"), nil
 }
 
 // ResolveAPIKey prefers the environment variable over the key file, as
@@ -109,9 +110,14 @@ func resolveAPIKey() (key string, fromEnv bool, err error) {
 	if err != nil {
 		return "", false, err
 	}
-	data, err := os.ReadFile(path)
+	data, err := readSealed(path, sealedAPIKey)
 	if errors.Is(err, os.ErrNotExist) {
 		return "", false, &apiKeyError{"No usable Garmin Personal API key was found. " + ReconnectHint}
+	}
+	if errors.Is(err, errUnsealable) {
+		return "", false, &apiKeyError{fmt.Sprintf(
+			"The key file %s can't be decrypted: it is damaged, or its encryption key in %s is gone. %s",
+			path, keys.where(), ReconnectHint)}
 	}
 	if err != nil {
 		return "", false, err
@@ -128,7 +134,7 @@ func SaveAPIKey(key string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err := writePrivateFile(path, []byte(key+"\n")); err != nil {
+	if err := writeSealed(path, sealedAPIKey, []byte(key)); err != nil {
 		return "", err
 	}
 	return path, nil
@@ -150,7 +156,7 @@ type cachedToken struct {
 }
 
 // Authenticator exchanges a Personal API key for a bearer token and caches it
-// in memory and in a file other processes share.
+// in memory and in a sealed file other processes share.
 type Authenticator struct {
 	baseURL    string
 	httpClient *http.Client
@@ -270,7 +276,9 @@ func (a *Authenticator) store(token cachedToken) {
 	if err != nil {
 		return
 	}
-	_ = writePrivateFile(path, data)
+	if err := writeSealed(path, sealedBearerToken, data); err != nil {
+		slog.Warn("couldn't save the Garmin Personal API bearer token", "error", err)
+	}
 }
 
 func readCache() (cachedToken, bool) {
@@ -278,7 +286,7 @@ func readCache() (cachedToken, bool) {
 	if err != nil {
 		return cachedToken{}, false
 	}
-	data, err := os.ReadFile(path)
+	data, err := readSealed(path, sealedBearerToken)
 	if err != nil {
 		return cachedToken{}, false
 	}

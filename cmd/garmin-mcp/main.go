@@ -299,7 +299,7 @@ func saveKey(ctx context.Context) int {
 		fmt.Fprintf(os.Stderr, "Couldn't save the key: %v\n", err)
 		return 1
 	}
-	fmt.Printf("Connected to Garmin Connect. Key saved to %s (owner-only permissions).\n", path)
+	fmt.Printf("Connected to Garmin Connect. Key saved encrypted to %s.\n", path)
 	if _, ok := os.LookupEnv(garmin.KeyEnvVar); ok {
 		fmt.Fprintf(os.Stderr, "Note: %s is set and takes precedence over the saved key; unset it to use the new one.\n", garmin.KeyEnvVar)
 	}

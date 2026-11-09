@@ -138,7 +138,11 @@ func TestMobileSignInSavesTokens(t *testing.T) {
 	if saved.RefreshToken != "refresh" || saved.ClientID != diClientIDs[0] {
 		t.Errorf("saved = %+v", saved)
 	}
-	data, _ := os.ReadFile(path)
+	// Read decrypted: the sealed bytes would hide the credentials anyway.
+	data, err := readSealed(path, sealedConnectSignIn)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if strings.Contains(string(data), testPassword) || strings.Contains(string(data), testEmail) {
 		t.Error("the token file holds the credentials")
 	}

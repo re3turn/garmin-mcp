@@ -262,7 +262,7 @@ func TestSavingThroughASymlinkUpdatesItsTarget(t *testing.T) {
 	if err := os.WriteFile(target, []byte("old\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	link := filepath.Join(home, ".config", "garmin", "connect-personal-api-key")
+	link := filepath.Join(home, ".config", "garmin", "connect-personal-api-key.enc")
 	if err := os.MkdirAll(filepath.Dir(link), 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -275,7 +275,7 @@ func TestSavingThroughASymlinkUpdatesItsTarget(t *testing.T) {
 	if info, err := os.Lstat(link); err != nil || info.Mode()&os.ModeSymlink == 0 {
 		t.Errorf("the key path is no longer a symlink: %v, %v", info, err)
 	}
-	if data, err := os.ReadFile(target); err != nil || string(data) != "new\n" {
+	if data, err := readSealed(target, sealedAPIKey); err != nil || string(data) != "new" {
 		t.Errorf("target = %q, %v; want the new key", data, err)
 	}
 }

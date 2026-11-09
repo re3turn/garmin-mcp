@@ -60,7 +60,7 @@ func savedTokens(t *testing.T) connectTokens {
 		t.Fatal(err)
 	}
 	assertPrivate(t, path)
-	data, err := os.ReadFile(path)
+	data, err := readSealed(path, sealedConnectSignIn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func TestCheckConnectSignInReadsOnlyTheFile(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte(`{"di_token":""}`), 0o600); err != nil {
+	if err := writeSealed(path, sealedConnectSignIn, []byte(`{"di_token":""}`)); err != nil {
 		t.Fatal(err)
 	}
 	if err := CheckConnectSignIn(); !errors.Is(err, ErrConnectLogin) {
@@ -304,6 +304,38 @@ func TestRefusedRefreshUsesTokensAnotherProcessSaved(t *testing.T) {
 	}
 	if refreshes != 1 || bearer != "Bearer "+fresh {
 		t.Errorf("refreshes = %d, bearer = %q", refreshes, bearer)
+	}
+}
+
+// A token file saved before it was sealed, or sealed with a key that is gone,
+// asks for a new sign-in rather than failing every request with a crypto error.
+func TestUnsealableTokenFileAsksForSignIn(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		write func(t *testing.T, path string)
+	}{
+		{"plaintext", func(t *testing.T, path string) {
+			if err := os.WriteFile(path, []byte(`{"di_token":"h.p.s"}`), 0o600); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{"another key", func(t *testing.T, path string) {
+			writeTokens(t, connectTokens{AccessToken: fakeJWT(t, testNow.Add(time.Hour))})
+			replaceEncryptionKey(t)
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			setHome(t)
+			path, _ := ConnectTokenFile()
+			if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			tc.write(t, path)
+			if err := CheckConnectSignIn(); !errors.Is(err, ErrConnectLogin) ||
+				!strings.Contains(err.Error(), "can't be decrypted") || !strings.Contains(err.Error(), "auth --unofficial") {
+				t.Errorf("err = %v", err)
+			}
+		})
 	}
 }
 

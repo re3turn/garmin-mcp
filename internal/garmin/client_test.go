@@ -45,6 +45,9 @@ func setHome(t *testing.T) string {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+	// On Linux the key is a file under home, which is new for every test.
+	forgetEncryptionKey()
+	t.Cleanup(forgetEncryptionKey)
 	return home
 }
 
@@ -142,7 +145,7 @@ func TestTokenIsCachedAcrossClients(t *testing.T) {
 	if n := f.exchanges.Load(); n != 1 {
 		t.Errorf("exchanges = %d, want 1", n)
 	}
-	assertPrivate(t, filepath.Join(home, ".config", "garmin", "connect-personal-api-bearer-token.json"))
+	assertPrivate(t, filepath.Join(home, ".config", "garmin", "connect-personal-api-bearer-token.enc"))
 }
 
 // Tokens last 24 hours from testNow and are replaced within an hour of expiry.
@@ -187,11 +190,8 @@ func TestCacheWrittenByAnotherProcessIsReused(t *testing.T) {
 	sum := sha256.Sum256([]byte(f.server.URL + "\x00test-key"))
 	cache := fmt.Sprintf(`{"fingerprint": %q, "access_token": "h.p.other", "expires_at": %d.25}`,
 		hex.EncodeToString(sum[:]), testNow.Add(10*time.Hour).Unix())
-	path := filepath.Join(home, ".config", "garmin", "connect-personal-api-bearer-token.json")
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte(cache), 0o600); err != nil {
+	path := filepath.Join(home, ".config", "garmin", "connect-personal-api-bearer-token.enc")
+	if err := writeSealed(path, sealedBearerToken, []byte(cache)); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.client().Get(context.Background(), "/x", nil); err != nil {
@@ -350,7 +350,7 @@ func TestSavingOverAReadableKeyFileTightensIt(t *testing.T) {
 		t.Skip("file modes don't apply on Windows")
 	}
 	home := setHome(t)
-	path := filepath.Join(home, ".config", "garmin", "connect-personal-api-key")
+	path := filepath.Join(home, ".config", "garmin", "connect-personal-api-key.enc")
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		t.Fatal(err)
 	}

@@ -34,9 +34,21 @@ go install github.com/re3turn/garmin-mcp/cmd/garmin-mcp@latest
    Without a terminal, pipe the key in instead (e.g. `pbpaste | garmin-mcp auth`).
 3. Run `garmin-mcp auth --check` to confirm the saved key works.
 
-The key is checked with Garmin and then saved to `~/.config/garmin/connect-personal-api-key`
+The key is checked with Garmin and then saved to `~/.config/garmin/connect-personal-api-key.enc`
 (`%USERPROFILE%\.config\garmin\` on Windows). Bearer tokens are cached in
-`connect-personal-api-bearer-token.json` in the same directory.
+`connect-personal-api-bearer-token.enc` in the same directory.
+
+These files are encrypted (AES-256-GCM) and readable only by you. The encryption key is kept in the macOS
+keychain or Windows Credential Manager, so a backup or synced copy of `~/.config/garmin` can't be decrypted. On
+Linux, which often has no credential store on a server, the key is the file
+`~/.local/state/garmin-mcp/encryption-key`, kept apart from the files it encrypts. This doesn't protect against
+another program running as you. If the key is lost, run `auth` again, and `auth --unofficial` if you use the
+unofficial API. When the keychain can't be read (it's locked, or you're signed in over SSH), the server reports
+that instead of falling back to a key file.
+
+Earlier versions saved these files unencrypted, without the `.enc` suffix. They are no longer read: run `auth`
+again and delete `connect-personal-api-key`, `connect-personal-api-bearer-token.json`, and
+`connect-unofficial-tokens.json` from `~/.config/garmin`.
 
 `GARMIN_PERSONAL_API_KEY`, when set, takes precedence over the key file.
 
@@ -193,8 +205,8 @@ instead of a Personal API key. Without `--unofficial`, none of this is used.
    If there is no saved sign-in, the server says so on stderr when it starts and serves the other tools as usual;
    signing in while it runs takes effect without a restart.
 
-The tokens Garmin returns are saved to `~/.config/garmin/connect-unofficial-tokens.json` with owner-only
-permissions and renewed automatically. They give full access to your Garmin account, so keep that file private.
+The tokens Garmin returns are saved to `~/.config/garmin/connect-unofficial-tokens.enc`, encrypted like the
+Personal API key (see [Authentication](#authentication)), and renewed automatically. They give full access to your Garmin account.
 When Garmin refuses to renew them, run `auth --unofficial` again.
 
 Garmin often blocks sign-ins from clients that aren't a browser, because Go can't present a browser's TLS

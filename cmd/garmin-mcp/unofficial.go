@@ -15,7 +15,7 @@ import (
 const unofficialWarning = `This signs in to the unofficial Garmin Connect API, the one Garmin's own apps use.
 Garmin can change or block it at any time, and using it may conflict with Garmin's terms.
 Your password is sent to Garmin only and is never saved; the tokens Garmin returns are
-saved with owner-only permissions and give full access to your account.
+saved encrypted and give full access to your account.
 
 `
 
@@ -73,7 +73,7 @@ func signIn(ctx context.Context) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	fmt.Printf("Signed in to Garmin Connect. Tokens saved to %s (owner-only permissions).\n", path)
+	fmt.Printf("Signed in to Garmin Connect. Tokens saved encrypted to %s.\n", path)
 	fmt.Println("Start the server with --unofficial to use them.")
 	return 0
 }

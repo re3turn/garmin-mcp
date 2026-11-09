@@ -10,6 +10,12 @@ import (
 // another process has the file open; retrying works. A symlink at path is
 // replaced, not followed, so a download can't escape its folder through one.
 func replaceFile(path string, content []byte, dirPerm os.FileMode) error {
+	return placeFile(path, content, dirPerm, os.Rename)
+}
+
+// placeFile writes content to a synced temp file (mode 0600) beside path and
+// has place move or link it to path.
+func placeFile(path string, content []byte, dirPerm os.FileMode, place func(temp, path string) error) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, dirPerm); err != nil {
 		return err
@@ -32,5 +38,5 @@ func replaceFile(path string, content []byte, dirPerm os.FileMode) error {
 	if err := temp.Close(); err != nil {
 		return err
 	}
-	return os.Rename(temp.Name(), path)
+	return place(temp.Name(), path)
 }

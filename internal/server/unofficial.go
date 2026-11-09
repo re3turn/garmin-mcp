@@ -192,7 +192,8 @@ func (s *Server) addUnofficialPlanTools(server *mcp.Server) {
 			"watch and no API serves them.", c.CoachWorkouts)
 	s.rangeTool(server, "garmin_get_scheduled_workouts", "Get scheduled workouts",
 		"Workouts on the Garmin Connect calendar over a range, from training plans or scheduled by hand, with "+
-			"each one's date, workoutId, sport, and whether an activity completed it.", c.ScheduledWorkouts)
+			"each one's date, workoutId, sport, and whether an activity completed it. For upcoming workouts pass "+
+			"both start and end, as end defaults to today.", c.ScheduledWorkouts)
 	addTool(server, unofficialTool("garmin_get_calendar_month", "Get calendar month",
 		"The Garmin Connect calendar for one month: scheduled workouts, training plan days, races and other "+
 			"events, and recorded activities, each with its date."),

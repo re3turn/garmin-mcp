@@ -34,18 +34,14 @@ type connectLoginError struct{ msg string }
 func (e *connectLoginError) Error() string { return e.msg }
 func (e *connectLoginError) Unwrap() error { return ErrConnectLogin }
 
-// connectTokens has the field names of python-garminconnect's
-// garmin_tokens.json, so a token file saved by it can be copied in as is.
+// connectTokens is the sign-in `auth --unofficial` saves.
 type connectTokens struct {
 	AccessToken  string `json:"di_token"`
 	RefreshToken string `json:"di_refresh_token"`
 	ClientID     string `json:"di_client_id"`
 }
 
-// ConnectTokenFile is where `auth --unofficial` saves the sign-in. It is a
-// separate file from python-garminconnect's ~/.garminconnect because every
-// refresh replaces the refresh token: two tools sharing one file would each
-// keep using a refresh token the other already spent.
+// ConnectTokenFile is where `auth --unofficial` saves the sign-in.
 func ConnectTokenFile() (string, error) {
 	dir, err := configDir()
 	if err != nil {

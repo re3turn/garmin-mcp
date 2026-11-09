@@ -307,30 +307,6 @@ func TestRefusedRefreshUsesTokensAnotherProcessSaved(t *testing.T) {
 	}
 }
 
-// garmin_tokens.json from python-garminconnect can be copied in as is.
-func TestPythonTokenFileIsRead(t *testing.T) {
-	var bearer string
-	c := newConnect(t, func(w http.ResponseWriter, r *http.Request) {
-		bearer = r.Header.Get("Authorization")
-		fmt.Fprint(w, `{}`)
-	})
-	access := fakeJWT(t, testNow.Add(time.Hour))
-	path, _ := ConnectTokenFile()
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	data := fmt.Sprintf(`{"di_token": %q, "di_refresh_token": "r", "di_client_id": "GARMIN_CONNECT_MOBILE_ANDROID_DI"}`, access)
-	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := c.Devices(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	if bearer != "Bearer "+access {
-		t.Errorf("bearer = %q", bearer)
-	}
-}
-
 func TestErrorBodiesHideTokens(t *testing.T) {
 	access := fakeJWT(t, testNow.Add(time.Hour))
 	c := newConnect(t, func(w http.ResponseWriter, r *http.Request) {

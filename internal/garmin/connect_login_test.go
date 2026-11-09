@@ -264,7 +264,7 @@ func TestEveryStrategyRateLimited(t *testing.T) {
 		"GET /portal/sso/en-US/sign-in": statusAnswer(http.StatusTooManyRequests),
 	})
 	_, err := c.Login(context.Background(), testEmail, testPassword, LoginPrompts{MFACode: noMFA})
-	if !errors.Is(err, ErrConnectLogin) || !strings.Contains(err.Error(), "rate-limited") || !strings.Contains(err.Error(), "garmin_tokens.json") {
+	if !errors.Is(err, ErrConnectLogin) || !strings.Contains(err.Error(), "rate-limited") {
 		t.Errorf("err = %v", err)
 	}
 	if strings.Contains(err.Error(), testPassword) {

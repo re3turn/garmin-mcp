@@ -151,15 +151,12 @@ func (c *ConnectClient) Login(ctx context.Context, email, password string, promp
 		failures = append(failures, strategy.name+": "+sErr.reason)
 		progress("  " + sErr.reason)
 	}
-	path, _ := ConnectTokenFile()
-	fallback := fmt.Sprintf("If this keeps happening, sign in with python-garminconnect and copy its "+
-		"~/.garminconnect/garmin_tokens.json to %s.", path)
 	if rateLimited == len(strategies) {
 		return "", &connectLoginError{"Garmin rate-limited or blocked every sign-in attempt (HTTP 429/427). " +
 			"Garmin often does this to clients that aren't a browser, not only after too many tries. " +
-			"Try again later or from another network. " + fallback}
+			"Try again later or from another network."}
 	}
-	return "", &connectLoginError{"Couldn't sign in to Garmin Connect (" + strings.Join(failures, "; ") + "). " + fallback}
+	return "", &connectLoginError{"Couldn't sign in to Garmin Connect (" + strings.Join(failures, "; ") + ")."}
 }
 
 func (c *ConnectClient) newSession() *http.Client {

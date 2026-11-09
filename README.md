@@ -197,11 +197,8 @@ The tokens Garmin returns are saved to `~/.config/garmin/connect-unofficial-toke
 permissions and renewed automatically. They give full access to your Garmin account, so keep that file private.
 When Garmin refuses to renew them, run `auth --unofficial` again.
 
-Garmin often blocks sign-ins from clients that aren't a browser. python-garminconnect gets past more of these
-blocks by imitating a browser's TLS fingerprint, which this Go client can't. If every attempt is blocked, sign in
-with python-garminconnect and copy its `~/.garminconnect/garmin_tokens.json` to the path above; the file format is
-the same. Don't keep using both tools with the same file: each renewal replaces the refresh token, and the other
-tool's copy then stops working.
+Garmin often blocks sign-ins from clients that aren't a browser, because Go can't present a browser's TLS
+fingerprint. If every attempt is blocked, try again later or from another network.
 
 HTTP mode leaves these tools out unless you also pass `--allow-unofficial-over-http`, because anyone who can reach
 the port can use your account's sign-in through them.

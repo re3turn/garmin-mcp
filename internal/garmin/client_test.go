@@ -173,19 +173,19 @@ func TestCachedTokenRefreshWindow(t *testing.T) {
 	}
 }
 
-// Garmin's Python client writes expires_at as a float, and the cache file is
-// shared with it.
-func TestCacheWrittenByPythonClientIsReused(t *testing.T) {
+// The cache file is shared with other processes running this server, and
+// expires_at may carry a fraction.
+func TestCacheWrittenByAnotherProcessIsReused(t *testing.T) {
 	home := isolate(t)
 	f := newFakeGarmin(t, func(w http.ResponseWriter, _ *http.Request, token string) {
-		if token != "python" {
+		if token != "other" {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		fmt.Fprint(w, `{}`)
 	})
 	sum := sha256.Sum256([]byte(f.server.URL + "\x00test-key"))
-	cache := fmt.Sprintf(`{"fingerprint": %q, "access_token": "h.p.python", "expires_at": %d.25}`,
+	cache := fmt.Sprintf(`{"fingerprint": %q, "access_token": "h.p.other", "expires_at": %d.25}`,
 		hex.EncodeToString(sum[:]), testNow.Add(10*time.Hour).Unix())
 	path := filepath.Join(home, ".config", "garmin", "connect-personal-api-bearer-token.json")
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
@@ -198,7 +198,7 @@ func TestCacheWrittenByPythonClientIsReused(t *testing.T) {
 		t.Fatal(err)
 	}
 	if n := f.exchanges.Load(); n != 0 {
-		t.Errorf("exchanges = %d, want the Python client's token reused", n)
+		t.Errorf("exchanges = %d, want the other process's token reused", n)
 	}
 }
 

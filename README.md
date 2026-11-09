@@ -36,8 +36,7 @@ go install github.com/re3turn/garmin-mcp/cmd/garmin-mcp@latest
 
 The key is checked with Garmin and then saved to `~/.config/garmin/connect-personal-api-key`
 (`%USERPROFILE%\.config\garmin\` on Windows). Bearer tokens are cached in
-`connect-personal-api-bearer-token.json` in the same directory. Both use the same location and format as Garmin's
-official Python client (`gc-personal`), so a key saved by either one works for both.
+`connect-personal-api-bearer-token.json` in the same directory.
 
 `GARMIN_PERSONAL_API_KEY`, when set, takes precedence over the key file.
 

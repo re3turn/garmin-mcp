@@ -63,8 +63,7 @@ func isTokenError(err error) bool {
 	return errors.As(err, &target)
 }
 
-// configDir is shared with Garmin's gc-personal CLI, so a key saved by either
-// works for both.
+// configDir holds the key and every token file.
 func configDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -151,7 +150,7 @@ type cachedToken struct {
 }
 
 // Authenticator exchanges a Personal API key for a bearer token and caches it
-// in memory and in the same file and format as Garmin's Python client.
+// in memory and in a file other processes share.
 type Authenticator struct {
 	baseURL    string
 	httpClient *http.Client
@@ -233,8 +232,8 @@ func (a *Authenticator) Token(ctx context.Context, stale string) (string, error)
 	}
 }
 
-// cached checks memory first and then the file, which another process such as
-// Garmin's Python client may have refreshed.
+// cached checks memory first and then the file, which another process running
+// this server may have refreshed.
 func (a *Authenticator) cached(fingerprint, stale string) (string, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
